@@ -304,3 +304,7 @@ mod tests {
     }
 
 }
+
+
+mod eval;
+pub use eval::{EvalError, evaluate_expression};
