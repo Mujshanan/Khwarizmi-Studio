@@ -19,15 +19,16 @@ Clone with the submodule:
 
 \`\`\`bash
 git clone --recurse-submodules https://github.com/Mujshanan/Khwarizmi-Studio.git
-cd Khwarizmi-Studio/vendor/marktext
+cd Khwarizmi-Studio
 \`\`\`
 
-MarkText's current development instructions require Node.js and pnpm; install its dependencies and run its development script from the submodule root:
+On Windows, run the included launcher from PowerShell. It initializes the submodule if needed, installs dependencies on first run, and starts the upstream editor:
 
-\`\`\`bash
-pnpm install
-pnpm run dev
+\`\`\`powershell
+.\\scripts\\run-editor.ps1
 \`\`\`
+
+Requirements: Node.js 20.19 or newer and pnpm 10 or newer. You can also run `pnpm install` and `pnpm run dev` directly from `vendor/marktext`.
 
 For a repeatable Windows build, use the **Actions → MarkText Windows build** workflow. It checks out the submodule, installs dependencies, runs unit tests, builds the Windows x64 installer, and uploads the installer/ZIP as a 14-day workflow artifact. The workflow is configured to run on relevant pushes and pull requests; it can also be started manually from the Actions tab. This builds the upstream MarkText app as-is—not a rebranded Khwarizmi app yet. For platform-specific build details, see [MarkText's build instructions](https://github.com/marktext/marktext/blob/develop/packages/website/content/docs/dev/BUILD.md).
 
