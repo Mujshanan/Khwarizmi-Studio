@@ -20,7 +20,7 @@ permissions:
 
 jobs:
   build-windows:
-    runs-on: windows-latest
+    runs-on: windows-2022
     steps:
       - name: Check out Khwarizmi Studio and MarkText
         uses: actions/checkout@v4
@@ -32,12 +32,24 @@ jobs:
         with:
           version: 10.33.4
 
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Set up MSBuild environment
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 22.12.0
 
       - name: Install dependencies
+        env:
+          npm_config_msvs_version: '2022'
         run: pnpm install --frozen-lockfile
         working-directory: vendor/marktext
 
@@ -46,6 +58,8 @@ jobs:
         working-directory: vendor/marktext
 
       - name: Build Windows installer
+        env:
+          npm_config_msvs_version: '2022'
         run: pnpm run build:win
         working-directory: vendor/marktext
 
