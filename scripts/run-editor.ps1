@@ -24,11 +24,11 @@ if (-not (Get-Command pnpm -ErrorAction SilentlyContinue)) {
     throw "pnpm 10 or newer is required. Enable Corepack or install pnpm, then reopen PowerShell."
 }
 
-Push-Location $repoRoot
+& (Join-Path $repoRoot "scripts/patch-marktext.ps1")
+if ($LASTEXITCODE -ne 0) { throw "Failed to apply Khwarizmi branding." }
+
+Push-Location $editorPath
 try {
-    & (Join-Path $repoRoot "scripts/patch-marktext.ps1")
-    if ($LASTEXITCODE -ne 0) { throw "Failed to apply Khwarizmi branding." }
-    Push-Location $editorPath
     if (-not (Test-Path "node_modules")) {
         Write-Host "Installing MarkText dependencies (first run only)..."
         pnpm install
@@ -37,14 +37,12 @@ try {
         }
     }
 
-    Write-Host "Starting the upstream MarkText development app."
-    Write-Host "This is the unmodified editor baseline, not yet the Khwarizmi-branded application."
+    Write-Host "Starting Khwarizmi Studio (based on the MarkText editor engine)."
     pnpm run dev
     if ($LASTEXITCODE -ne 0) {
         throw "MarkText exited with an error."
     }
 }
 finally {
-    Pop-Location
     Pop-Location
 }
