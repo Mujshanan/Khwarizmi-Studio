@@ -1,0 +1,42 @@
+name: Milkdown prototype
+
+on:
+  push:
+    branches: [migration/milkdown-mit]
+    paths:
+      - "prototypes/milkdown/**"
+      - ".github/workflows/milkdown-prototype.yml"
+  pull_request:
+    paths:
+      - "prototypes/milkdown/**"
+      - ".github/workflows/milkdown-prototype.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: prototypes/milkdown
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: prototypes/milkdown/package-lock.json
+      - name: Install dependencies
+        run: npm install
+      - name: Type-check and build
+        run: npm run build
+      - name: Upload static prototype
+        uses: actions/upload-artifact@v4
+        with:
+          name: khwarizmi-milkdown-prototype
+          path: prototypes/milkdown/dist/
+          retention-days: 14
