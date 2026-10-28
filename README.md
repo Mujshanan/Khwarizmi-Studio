@@ -29,7 +29,7 @@ pnpm install
 pnpm run dev
 \`\`\`
 
-For platform-specific production builds, consult [MarkText's build instructions](https://github.com/marktext/marktext/blob/develop/packages/website/content/docs/dev/BUILD.md). These commands have **not yet been run in this environment**, so the editor build is not yet verified.
+For a repeatable Windows build, use the **Actions → MarkText Windows build** workflow. It checks out the submodule, installs dependencies, runs unit tests, builds the Windows x64 installer, and uploads the installer/ZIP as a 14-day workflow artifact. The workflow is configured to run on relevant pushes and pull requests; it can also be started manually from the Actions tab. This builds the upstream MarkText app as-is—not a rebranded Khwarizmi app yet. For platform-specific build details, see [MarkText's build instructions](https://github.com/marktext/marktext/blob/develop/packages/website/content/docs/dev/BUILD.md).
 
 MarkText's repository is MIT-licensed. Keep its license and copyright notices with the submodule and audit dependency and asset licenses before redistribution. See [the editor reuse and licensing decision](docs/architecture/editor-base-and-licensing.md).
 
@@ -62,7 +62,7 @@ See [Markdown calculation blocks](docs/architecture/markdown-calculations.md).
 - MarkText is now linked as a submodule at \`vendor/marktext\`; it is not copied into the Khwarizmi Git history as ordinary files.
 - The Rust syntax crate has an initial lossless lexer, byte spans, a conservative expression formatter, and unit tests.
 - The \`calcpad\` Markdown fence is a proposed syntax documented for implementation; the parser does not yet evaluate it.
-- No Rust build/test or desktop build has been run in this environment. The current Rust crate is a scaffold, and MarkText integration is not yet verified.
+- A Windows build/test workflow has been added, but its first run must complete successfully before we can claim the editor builds. The current Rust crate is a scaffold, and MarkText integration is not yet verified.
 
 ## Upstream references
 
