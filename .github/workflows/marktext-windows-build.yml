@@ -56,5 +56,7 @@ jobs:
           path: |
             vendor/marktext/dist/*.exe
             vendor/marktext/dist/*.zip
+            dist/*.exe
+            dist/*.zip
           if-no-files-found: error
           retention-days: 14
