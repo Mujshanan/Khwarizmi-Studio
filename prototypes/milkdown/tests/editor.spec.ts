@@ -10,6 +10,7 @@ test('opens and exports an untouched Markdown file byte-for-byte', async ({ page
   await expect(page.locator('.milkdown .ProseMirror')).toBeVisible({ timeout: 20_000 })
   await page.locator('#file-input').setInputFiles({ name: 'fidelity.md', mimeType: 'text/markdown', buffer: Buffer.from(original, 'utf8') })
   await expect(page.locator('#document-name')).toContainText('fidelity.md')
+  await expect(page.locator('#status-message')).toHaveText('Opened fidelity.md')
   await page.getByRole('button', { name: 'Source mode' }).click()
   await expect(page.locator('#source-editor')).toBeVisible()
   await expect(page.locator('#source-editor')).toHaveValue(original)
@@ -24,6 +25,7 @@ test('opens and exports an untouched Markdown file byte-for-byte', async ({ page
 test('reports calcpad fences without claiming to execute them', async ({ page }) => {
   await page.goto('/')
   await page.locator('#file-input').setInputFiles({ name: 'fidelity.md', mimeType: 'text/markdown', buffer: await readFile(fixturePath) })
+  await expect(page.locator('#status-message')).toHaveText('Opened fidelity.md')
   await expect(page.locator('#calc-count')).toHaveText('1')
   await expect(page.getByText('Not connected')).toBeVisible()
 })
