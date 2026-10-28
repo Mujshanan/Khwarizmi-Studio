@@ -21,6 +21,10 @@ on:
       - "crates/**"
       - "Cargo.toml"
 
+concurrency:
+  group: khwarizmi-windows-build-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
 
