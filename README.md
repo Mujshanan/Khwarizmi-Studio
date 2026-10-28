@@ -11,9 +11,27 @@ Khwarizmi Studio is a Markdown-first engineering-calculation IDE. It combines a 
 - **PDF publishing:** a separate renderer for page templates, equations, figures, tables, numbering, headers/footers, and references.
 - **MCP:** local, permission-scoped tools for project discovery, validation, controlled calculation runs, and PDF export.
 
-## Editor base
+## Editor source
 
-MarkText is the proposed editor starting point because its MIT license permits reuse and modification subject to retaining required notices. We should adapt its editor shell rather than blindly copy every feature. Before release, audit its dependency licenses and bundled assets, retain applicable notices, and maintain a third-party notices file. See [the editor reuse and licensing decision](docs/architecture/editor-base-and-licensing.md).
+The MarkText upstream repository is connected at \`vendor/marktext\` as a Git submodule, pinned to a specific upstream commit. This brings the real editor source into a recursive checkout without copying the entire source tree into Khwarizmi's own commits. The next integration step is to build and run that editor, then adapt its desktop package and editor engine for Khwarizmi.
+
+Clone with the submodule:
+
+\`\`\`bash
+git clone --recurse-submodules https://github.com/Mujshanan/Khwarizmi-Studio.git
+cd Khwarizmi-Studio/vendor/marktext
+\`\`\`
+
+MarkText's current development instructions require Node.js and pnpm; install its dependencies and run its development script from the submodule root:
+
+\`\`\`bash
+pnpm install
+pnpm run dev
+\`\`\`
+
+For platform-specific production builds, consult [MarkText's build instructions](https://github.com/marktext/marktext/blob/develop/packages/website/content/docs/dev/BUILD.md). These commands have **not yet been run in this environment**, so the editor build is not yet verified.
+
+MarkText's repository is MIT-licensed. Keep its license and copyright notices with the submodule and audit dependency and asset licenses before redistribution. See [the editor reuse and licensing decision](docs/architecture/editor-base-and-licensing.md).
 
 ## Document model
 
@@ -23,9 +41,10 @@ See [Markdown calculation blocks](docs/architecture/markdown-calculations.md).
 
 ## Architecture
 
+- \`vendor/marktext\`: upstream MarkText editor source, linked as a Git submodule.
 - \`crates/calcpad-syntax\`: Rust lexical/syntax foundation and conservative formatter (initial scaffold; not full language parity).
 - \`crates/calcpad-engine\` (planned): semantic analysis, evaluation, units, and calculation result model.
-- \`apps/desktop\` (planned): adapted MarkText-based desktop editor.
+- \`apps/desktop\` (planned): Khwarizmi integration/adaptation of the MarkText desktop editor.
 - \`crates/pdf-publisher\` (planned): document renderer and print templates.
 - \`crates/mcp-server\` (planned): local MCP transport and permission-scoped tools.
 
@@ -40,15 +59,15 @@ See [Markdown calculation blocks](docs/architecture/markdown-calculations.md).
 
 ## Current status
 
+- MarkText is now linked as a submodule at \`vendor/marktext\`; it is not copied into the Khwarizmi Git history as ordinary files.
 - The Rust syntax crate has an initial lossless lexer, byte spans, a conservative expression formatter, and unit tests.
 - The \`calcpad\` Markdown fence is a proposed syntax documented for implementation; the parser does not yet evaluate it.
-- MarkText's MIT license has been checked, and a reuse/compliance plan is documented. The MarkText code itself has **not yet been copied or integrated**.
-- No Rust build/test or desktop build has been run in this environment. The current Rust crate is a scaffold, not a release-ready parser/formatter.
+- No Rust build/test or desktop build has been run in this environment. The current Rust crate is a scaffold, and MarkText integration is not yet verified.
 
 ## Upstream references
 
 - [CalcpadCE](https://github.com/imartincei/CalcpadCE) — reference behavior and source for targeted compatibility research.
-- [MarkText](https://github.com/marktext/marktext) — proposed Markdown editor base.
+- [MarkText](https://github.com/marktext/marktext) — Markdown editor base.
 
 ## License
 
