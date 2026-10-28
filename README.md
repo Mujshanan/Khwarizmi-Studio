@@ -13,7 +13,7 @@ Khwarizmi Studio is a Markdown-first engineering-calculation IDE. It combines a 
 
 ## Editor source
 
-The MarkText upstream repository is connected at \`vendor/marktext\` as a Git submodule, pinned to a specific upstream commit. This brings the real editor source into a recursive checkout without copying the entire source tree into Khwarizmi's own commits. The next integration step is to build and run that editor, then adapt its desktop package and editor engine for Khwarizmi.
+The MarkText upstream repository is connected at \`vendor/marktext\` as a Git submodule, pinned to a specific upstream commit. This brings the real editor source into a recursive checkout without copying the entire source tree into Khwarizmi's own commits. A repeatable PowerShell patch now changes installer metadata, executable identity, and startup branding; this is an initial adaptation, not a full rebrand of all editor UI strings.
 
 Clone with the submodule:
 
@@ -30,7 +30,7 @@ On Windows, run the included launcher from PowerShell. It initializes the submod
 
 Requirements: Node.js 22.12 or newer, pnpm 10 or newer, Python 3.12, and Visual Studio 2022 Build Tools with the C++ workload for native dependencies. You can also run `pnpm install` and `pnpm run dev` directly from `vendor/marktext`.
 
-For a repeatable Windows build, use the **Actions → MarkText Windows build** workflow. It checks out the submodule, installs dependencies, runs unit tests, builds the Windows x64 installer, and uploads the installer/ZIP as a 14-day workflow artifact. The workflow is configured to run on relevant pushes and pull requests; it can also be started manually from the Actions tab. This builds the upstream MarkText app as-is—not a rebranded Khwarizmi app yet. For platform-specific build details, see [MarkText's build instructions](https://github.com/marktext/marktext/blob/develop/packages/website/content/docs/dev/BUILD.md).
+For a repeatable Windows build, use the **Actions → Khwarizmi Studio Windows build** workflow. It checks out the submodule, installs dependencies, runs unit tests, builds the Windows x64 installer, and uploads the installer/ZIP as a 14-day workflow artifact. The workflow is configured to run on relevant pushes and pull requests; it can also be started manually from the Actions tab. The workflow applies the tracked Khwarizmi branding patch before building; the editor UI still contains upstream MarkText strings. For platform-specific build details, see [MarkText's build instructions](https://github.com/marktext/marktext/blob/develop/packages/website/content/docs/dev/BUILD.md).
 
 MarkText's repository is MIT-licensed. Keep its license and copyright notices with the submodule and audit dependency and asset licenses before redistribution. See [the editor reuse and licensing decision](docs/architecture/editor-base-and-licensing.md).
 
