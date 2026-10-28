@@ -61,7 +61,7 @@ See [Markdown calculation blocks](docs/architecture/markdown-calculations.md).
 ## Current status
 
 - MarkText is now linked as a submodule at \`vendor/marktext\`; it is not copied into the Khwarizmi Git history as ordinary files.
-- The Rust syntax crate has an initial lossless lexer, byte spans, a conservative expression formatter, and a lossless detector for explicit Markdown `calcpad` fenced blocks, with unit tests.
+- The Rust syntax crate has a lossless lexer with byte spans, a conservative formatter, lossless detection of explicit Markdown `calcpad` fenced blocks, and a minimal arithmetic evaluator for numeric expressions and supplied variables. The evaluator has source-offset errors and tests, but does not yet support assignments, units, functions, directives, or worksheet dependency evaluation.
 - The \`calcpad\` Markdown fence is a proposed syntax documented for implementation; the parser does not yet evaluate it.
 - A Windows build/test workflow has been added, but its first run must complete successfully before we can claim the editor builds. The current Rust crate is a scaffold, and MarkText integration is not yet verified.
 
