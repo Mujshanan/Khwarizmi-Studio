@@ -9,11 +9,17 @@ on:
       - ".gitmodules"
       - "vendor/marktext"
       - "README.md"
+      - "scripts/**"
+      - "crates/**"
+      - "Cargo.toml"
   pull_request:
     paths:
       - ".github/workflows/marktext-windows-build.yml"
       - ".gitmodules"
       - "vendor/marktext"
+      - "scripts/**"
+      - "crates/**"
+      - "Cargo.toml"
 
 permissions:
   contents: read
@@ -26,6 +32,16 @@ jobs:
         uses: actions/checkout@v4
         with:
           submodules: recursive
+
+      - name: Apply Khwarizmi branding
+        shell: pwsh
+        run: ./scripts/patch-marktext.ps1
+
+      - name: Set up Rust toolchain
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+
+      - name: Test Rust calculation syntax core
+        run: cargo test --workspace
 
       - name: Set up pnpm
         uses: pnpm/action-setup@v4
