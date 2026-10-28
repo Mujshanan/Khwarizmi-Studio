@@ -1,0 +1,60 @@
+name: MarkText Windows build
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/marktext-windows-build.yml"
+      - ".gitmodules"
+      - "vendor/marktext"
+  pull_request:
+    paths:
+      - ".github/workflows/marktext-windows-build.yml"
+      - ".gitmodules"
+      - "vendor/marktext"
+
+permissions:
+  contents: read
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - name: Check out Khwarizmi Studio and MarkText
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.33.4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+        working-directory: vendor/marktext
+
+      - name: Run unit tests
+        run: pnpm run test:unit
+        working-directory: vendor/marktext
+
+      - name: Build Windows installer
+        run: pnpm run build:win
+        working-directory: vendor/marktext
+
+      - name: Upload Windows build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: marktext-windows-x64
+          path: |
+            vendor/marktext/dist/*.exe
+            vendor/marktext/dist/*.zip
+          if-no-files-found: error
+          retention-days: 14
