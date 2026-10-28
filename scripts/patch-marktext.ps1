@@ -27,7 +27,7 @@ Replace-Text "packages/desktop/electron-builder.yml" "marktext-mac-" "khwarizmi-
 Replace-Text "packages/desktop/electron-builder.yml" "marktext-linux-" "khwarizmi-studio-linux-"
 Replace-Text "packages/desktop/electron-builder.yml" "executableName: marktext" "executableName: khwarizmi-studio"
 Replace-Text "packages/desktop/electron-builder.yml" "StartupWMClass: 'marktext'" "StartupWMClass: 'khwarizmi-studio'"
-Replace-Text "packages/desktop/electron-builder.yml" "Keywords: 'marktext;'" "Keywords: 'khwarizmi-studio; '"
+Replace-Text "packages/desktop/electron-builder.yml" "Keywords: 'marktext;'" "Keywords: 'khwarizmi-studio;'"
 
 Replace-Text "packages/desktop/src/main/index.ts" "productName: 'MarkText'" "productName: 'Khwarizmi Studio'"
 Replace-Text "packages/desktop/src/main/index.ts" "electronApp.setAppUserModelId('com.electron.marktext')" "electronApp.setAppUserModelId('com.khwarizmi.studio')"
