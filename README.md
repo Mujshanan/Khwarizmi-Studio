@@ -28,7 +28,7 @@ On Windows, run the included launcher from PowerShell. It initializes the submod
 .\\scripts\\run-editor.ps1
 \`\`\`
 
-Requirements: Node.js 22.12 or newer, pnpm 10 or newer, Python 3.12, and Visual Studio 2022 Build Tools with the C++ workload for native dependencies. You can also run `pnpm install` and `pnpm run dev` directly from `vendor/marktext`.
+Requirements: Node.js 24 or newer, pnpm 10 or newer, Python 3.12, and Visual Studio 2022 Build Tools with the C++ workload for native dependencies. You can also run `pnpm install` and `pnpm run dev` directly from `vendor/marktext`.
 
 For a repeatable Windows build, use the **Actions → Khwarizmi Studio Windows build** workflow. It checks out the submodule, installs dependencies, runs unit tests, builds the Windows x64 installer, and uploads the installer/ZIP as a 14-day workflow artifact. The workflow is configured to run on relevant pushes and pull requests; it can also be started manually from the Actions tab. The workflow applies the tracked Khwarizmi branding patch before building; the editor UI still contains upstream MarkText strings. For platform-specific build details, see [MarkText's build instructions](https://github.com/marktext/marktext/blob/develop/packages/website/content/docs/dev/BUILD.md).
 
