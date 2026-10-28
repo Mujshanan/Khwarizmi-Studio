@@ -1,4 +1,4 @@
-name: MarkText Windows build
+name: Khwarizmi Studio Windows build
 
 on:
   workflow_dispatch:
@@ -82,7 +82,7 @@ jobs:
       - name: Upload Windows build artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: marktext-windows-x64
+          name: khwarizmi-studio-windows-x64
           path: |
             vendor/marktext/dist/*.exe
             vendor/marktext/dist/*.zip
