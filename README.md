@@ -1,41 +1,49 @@
 # Khwarizmi Studio
 
-Khwarizmi Studio is a planned desktop engineering-calculation IDE built around the open-source [CalcpadCE](https://github.com/imartincei/CalcpadCE) calculation engine.
+Khwarizmi Studio is a Rust-first engineering-calculation IDE inspired by the focused, single-pane editing experience of [MarkText](https://github.com/marktext/marktext), with Calcpad-compatible worksheets and engineering report publishing.
 
-## Goals
+## Product direction
 
-- **Calculation editor:** Calcpad syntax highlighting, context-aware autocomplete, snippets, diagnostics, and symbol information.
-- **Native Markdown:** editable Markdown documents alongside calculation worksheets, with live preview, math, tables, images, and references.
-- **PDF publishing:** a replaceable PDF renderer and configurable engineering report templates, including page size, margins, title page, headers/footers, page numbering, and typography.
-- **MCP server:** opt-in tools for project discovery, worksheet inspection, controlled calculation execution, validation, and report export.
+- **Single-pane editor:** edit the document in one continuous workspace. Markdown headings, prose, equations, calculation blocks, tables, and images should feel like one document—not separate source and preview panes.
+- **Rust parser and formatter:** progressively replace the C# syntax/parser and formatting layer with Rust, backed by compatibility fixtures and differential tests. Keep the numerical calculation engine separate until its semantics can be migrated safely.
+- **Autocomplete and diagnostics:** context-aware completion, syntax diagnostics, symbols, units, functions, and snippets from the Rust syntax layer.
+- **PDF publishing:** a dedicated renderer and engineering-report templates for A4/Letter, margins, title pages, headers/footers, page numbering, equations, tables, and references.
+- **MCP:** local, permission-scoped tools for project discovery, worksheet inspection, validation, controlled calculation runs, and PDF export.
 
-## Architecture principles
+## Editor interaction
 
-1. Keep the Calcpad calculation engine as the source of calculation semantics; do not reimplement its parser or numerical behavior in the IDE.
-2. Separate the editor UI, document/project model, calculation adapter, PDF publishing pipeline, and MCP transport.
-3. Preserve compatibility with existing Calcpad worksheets wherever possible.
-4. Keep MCP operations explicit and permission-scoped. File writes and execution must be constrained to the opened project and never silently overwrite user work.
-5. Build features in small, testable steps and retain a reproducible baseline before changing the upstream engine.
+Use MarkText as a reference for the **single-pane/WYSIWYG interaction model**, not as a requirement to copy its code. The primary editor should be a continuous page-like surface. Toolbars and contextual popovers handle formatting; file navigation, outline, diagnostics, and calculation results are optional collapsible side panels rather than permanently split source/preview views. Keep a source-mode escape hatch for advanced users and debugging.
 
-## Planned milestones
+The document model should represent Markdown and Calcpad constructs explicitly so editing does not destroy calculation syntax. Embedded calculation blocks need clear visual boundaries, diagnostics, and a way to inspect the underlying source.
 
-1. **Upstream baseline:** import/fork CalcpadCE, record upstream commit and license notices, build and run existing tests.
-2. **IDE foundation:** project/workspace model, editor panels, file operations, and baseline UI.
-3. **Autocomplete:** syntax-aware completions, snippets, context help, and diagnostics based on the actual Calcpad language.
-4. **Markdown:** native `.md` editing and preview, with a documented strategy for linking Markdown to calculation worksheets.
-5. **PDF publishing:** renderer abstraction, print CSS/template system, regression fixtures, and export tests.
-6. **MCP:** local stdio server first, explicit tool schemas, workspace sandboxing, and integration tests.
-7. **Packaging:** Windows development build, installer, update strategy, and user documentation.
+## Architecture
 
-## Status
+- `crates/calcpad-syntax`: Rust lexical/syntax foundation and conservative formatter (initial scaffold; not full language parity yet).
+- `crates/calcpad-engine` (planned): calculation integration and, later, candidate Rust numerical components.
+- `apps/desktop` (planned): desktop shell and single-pane editor UI.
+- `crates/pdf-publisher` (planned): renderer abstraction and print templates.
+- `crates/mcp-server` (planned): local MCP transport and permission-scoped tools.
 
-This repository is currently the project destination. The upstream CalcpadCE source has not yet been imported. The initial implementation should not be considered buildable until the upstream baseline and build/test instructions are verified.
+### Migration rules
 
-## Upstream
+1. Preserve upstream Calcpad license and copyright notices when source is imported.
+2. Build a corpus of real worksheets and use golden/differential tests before switching parser behavior.
+3. Keep lexical parsing, syntax/formatting, semantic analysis, numerical evaluation, document rendering, and MCP transport as separate layers.
+4. Never silently rewrite a worksheet. Formatting should be previewable and reversible.
+5. Do not claim Rust parity until supported syntax, errors, units, directives, and rendered results pass the regression suite.
 
-- [CalcpadCE repository](https://github.com/imartincei/CalcpadCE)
-- [CalcpadCE documentation](https://imartincei.github.io/CalcpadCE/)
+## Current status
+
+- The Rust syntax crate has an initial lossless lexer, byte spans, a conservative expression formatter, and unit tests.
+- The full CalcpadCE upstream source has **not yet been imported into this repository**.
+- The Rust crate has **not been compiled or tested in this environment**. The initial code is a starting point, not a release-ready parser/formatter replacement.
+- The MarkText repository is used as a UI reference only; its code has not been copied.
+
+## Upstream references
+
+- [CalcpadCE](https://github.com/imartincei/CalcpadCE)
+- [MarkText](https://github.com/marktext/marktext)
 
 ## License
 
-CalcpadCE is MIT-licensed. When its source is imported, preserve upstream license and copyright notices and include notices for any additional dependencies. Confirm the exact license and third-party notices before distributing packaged builds.
+CalcpadCE is MIT-licensed. Preserve upstream notices when importing code and verify the licenses/notices of all dependencies before distributing binaries.
