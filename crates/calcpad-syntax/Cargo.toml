@@ -1,0 +1,12 @@
+[package]
+name = "calcpad-syntax"
+version = "0.1.0"
+edition = "2024"
+license = "MIT"
+description = "Rust syntax foundation for Khwarizmi Studio's Calcpad parser and formatter"
+
+[lib]
+name = "calcpad_syntax"
+path = "src/lib.rs"
+
+[dependencies]
