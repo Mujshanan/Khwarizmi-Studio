@@ -17,7 +17,7 @@ if (-not (Test-Path (Join-Path $editorPath "package.json"))) {
 }
 
 if (-not (Get-Command node -ErrorAction SilentlyContinue)) {
-    throw "Node.js is required. Install Node.js 22.12.0 or newer, then reopen PowerShell."
+    throw "Node.js is required. Install Node.js 24 or newer, then reopen PowerShell."
 }
 
 if (-not (Get-Command pnpm -ErrorAction SilentlyContinue)) {
