@@ -173,6 +173,86 @@ pub fn format_expression(source: &str) -> String {
     out.trim_end().to_string()
 }
 
+
+/// A fenced Markdown block whose info string starts with `calcpad`.
+/// Spans are byte offsets into the original Markdown source.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct CalculationBlock {
+    /// Includes the opening fence, body, and closing fence when present.
+    pub span: Range<usize>,
+    /// Contains only the block body, excluding both fences.
+    pub content_span: Range<usize>,
+}
+
+/// Finds explicit `calcpad` fenced blocks in Markdown without rewriting the source.
+///
+/// This deliberately handles only fenced blocks, not inline code or indented code.
+/// Ordinary fences (for example ```rust) are ignored. Unclosed calculation fences
+/// extend to end-of-file, matching Markdown's fenced-code behavior.
+pub fn find_calculation_blocks(markdown: &str) -> Vec<CalculationBlock> {
+    #[derive(Clone)]
+    struct Fence {
+        marker: char,
+        length: usize,
+        start: usize,
+        content_start: usize,
+    }
+
+    let mut blocks = Vec::new();
+    let mut active: Option<Fence> = None;
+    let mut offset = 0usize;
+
+    for line_with_newline in markdown.split_inclusive('\n') {
+        let line = line_with_newline.trim_end_matches('\n').trim_end_matches('\r');
+        let leading = line.chars().take_while(|c| *c == ' ').count();
+        let rest = if leading <= 3 { &line[leading..] } else { "" };
+        let marker = rest.chars().next();
+        let marker_count = marker
+            .filter(|c| *c == '`' || *c == '~')
+            .map(|c| rest.chars().take_while(|x| *x == c).count())
+            .unwrap_or(0);
+
+        if let Some(fence) = active.as_ref() {
+            let is_closing = leading <= 3
+                && marker == Some(fence.marker)
+                && marker_count >= fence.length
+                && rest[marker_count..].trim().is_empty();
+
+            if is_closing {
+                let content_end = offset;
+                let block_end = offset + line_with_newline.len();
+                blocks.push(CalculationBlock {
+                    span: fence.start..block_end,
+                    content_span: fence.content_start..content_end,
+                });
+                active = None;
+            }
+        } else if leading <= 3 && marker_count >= 3 {
+            let info = rest[marker_count..].trim();
+            let is_calcpad = marker != Some('`') || !info.contains('`');
+            let language = info.split_whitespace().next().unwrap_or("");
+            if is_calcpad && language.eq_ignore_ascii_case("calcpad") {
+                active = Some(Fence {
+                    marker: marker.unwrap(),
+                    length: marker_count,
+                    start: offset,
+                    content_start: offset + line_with_newline.len(),
+                });
+            }
+        }
+
+        offset += line_with_newline.len();
+    }
+
+    if let Some(fence) = active {
+        blocks.push(CalculationBlock {
+            span: fence.start..markdown.len(),
+            content_span: fence.content_start..markdown.len(),
+        });
+    }
+    blocks
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -199,4 +279,28 @@ mod tests {
     fn formatter_keeps_newlines_and_comments() {
         assert_eq!(format_expression("x=2\ny=3 # note"), "x = 2\ny = 3 # note");
     }
+    #[test]
+    fn finds_calcpad_blocks_and_preserves_byte_spans() {
+        let markdown = "Text\n\n```rust\nlet x = 1;\n```\n\n```calcpad\nL := 6 m\nR := L / 2\n```\n";
+        let blocks = find_calculation_blocks(markdown);
+        assert_eq!(blocks.len(), 1);
+        assert_eq!(&markdown[blocks[0].content_span.clone()], "L := 6 m\nR := L / 2\n");
+        assert_eq!(&markdown[blocks[0].span.clone()], "```calcpad\nL := 6 m\nR := L / 2\n```\n");
+    }
+
+    #[test]
+    fn supports_tilde_fences_and_unclosed_blocks() {
+        let markdown = "~~~Calcpad\nx := 2\n";
+        let blocks = find_calculation_blocks(markdown);
+        assert_eq!(blocks.len(), 1);
+        assert_eq!(&markdown[blocks[0].content_span.clone()], "x := 2\n");
+        assert_eq!(blocks[0].span, 0..markdown.len());
+    }
+
+    #[test]
+    fn ignores_non_calcpad_and_indented_fences() {
+        let markdown = "    ```calcpad\nignored\n    ```\n```text\nnot a calculation\n```\n";
+        assert!(find_calculation_blocks(markdown).is_empty());
+    }
+
 }
