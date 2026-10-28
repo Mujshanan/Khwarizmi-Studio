@@ -67,7 +67,10 @@ function setDirty(value: boolean) {
 }
 
 function getMarkdown(): string {
-  return sourceMode ? sourceEditor.value : (crepe?.getMarkdown() ?? markdownCache)
+  if (sourceMode) return sourceEditor.value
+  // Preserve the exact imported bytes until the user edits the visual document.
+  if (!dirty) return markdownCache
+  return crepe?.getMarkdown() ?? markdownCache
 }
 
 function refreshStats(markdown = getMarkdown()) {
@@ -113,18 +116,19 @@ async function mountEditor(markdown: string) {
   await crepe.create()
   crepe.on((listener) => {
     listener.markdownUpdated((_ctx, value) => {
+      if (loading) return
       markdownCache = value
-      if (!loading) setDirty(true)
+      setDirty(true)
       refreshStats(value)
     })
   })
   loading = false
-  markdownCache = crepe.getMarkdown()
+  // Do not replace the original Markdown with Milkdown's normalized serialization.
   refreshStats(markdownCache)
 }
 
 function enterSourceMode() {
-  markdownCache = getMarkdown()
+  markdownCache = dirty ? getMarkdown() : markdownCache
   sourceMode = true
   sourceEditor.value = markdownCache
   sourceEditor.hidden = false
