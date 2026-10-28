@@ -28,7 +28,7 @@ On Windows, run the included launcher from PowerShell. It initializes the submod
 .\\scripts\\run-editor.ps1
 \`\`\`
 
-Requirements: Node.js 20.19 or newer and pnpm 10 or newer. You can also run `pnpm install` and `pnpm run dev` directly from `vendor/marktext`.
+Requirements: Node.js 22.12 or newer, pnpm 10 or newer, Python 3.12, and Visual Studio 2022 Build Tools with the C++ workload for native dependencies. You can also run `pnpm install` and `pnpm run dev` directly from `vendor/marktext`.
 
 For a repeatable Windows build, use the **Actions → MarkText Windows build** workflow. It checks out the submodule, installs dependencies, runs unit tests, builds the Windows x64 installer, and uploads the installer/ZIP as a 14-day workflow artifact. The workflow is configured to run on relevant pushes and pull requests; it can also be started manually from the Actions tab. This builds the upstream MarkText app as-is—not a rebranded Khwarizmi app yet. For platform-specific build details, see [MarkText's build instructions](https://github.com/marktext/marktext/blob/develop/packages/website/content/docs/dev/BUILD.md).
 
@@ -61,7 +61,7 @@ See [Markdown calculation blocks](docs/architecture/markdown-calculations.md).
 ## Current status
 
 - MarkText is now linked as a submodule at \`vendor/marktext\`; it is not copied into the Khwarizmi Git history as ordinary files.
-- The Rust syntax crate has an initial lossless lexer, byte spans, a conservative expression formatter, and unit tests.
+- The Rust syntax crate has an initial lossless lexer, byte spans, a conservative expression formatter, and a lossless detector for explicit Markdown `calcpad` fenced blocks, with unit tests.
 - The \`calcpad\` Markdown fence is a proposed syntax documented for implementation; the parser does not yet evaluate it.
 - A Windows build/test workflow has been added, but its first run must complete successfully before we can claim the editor builds. The current Rust crate is a scaffold, and MarkText integration is not yet verified.
 
