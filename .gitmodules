@@ -1,0 +1,4 @@
+[submodule "vendor/marktext"]
+	path = vendor/marktext
+	url = https://github.com/marktext/marktext.git
+	branch = develop
