@@ -17,15 +17,18 @@ if (-not (Test-Path (Join-Path $editorPath "package.json"))) {
 }
 
 if (-not (Get-Command node -ErrorAction SilentlyContinue)) {
-    throw "Node.js is required. Install Node.js 20.19 or newer, then reopen PowerShell."
+    throw "Node.js is required. Install Node.js 22.12.0 or newer, then reopen PowerShell."
 }
 
 if (-not (Get-Command pnpm -ErrorAction SilentlyContinue)) {
     throw "pnpm 10 or newer is required. Enable Corepack or install pnpm, then reopen PowerShell."
 }
 
-Push-Location $editorPath
+Push-Location $repoRoot
 try {
+    & (Join-Path $repoRoot "scripts/patch-marktext.ps1")
+    if ($LASTEXITCODE -ne 0) { throw "Failed to apply Khwarizmi branding." }
+    Push-Location $editorPath
     if (-not (Test-Path "node_modules")) {
         Write-Host "Installing MarkText dependencies (first run only)..."
         pnpm install
@@ -42,5 +45,6 @@ try {
     }
 }
 finally {
+    Pop-Location
     Pop-Location
 }
