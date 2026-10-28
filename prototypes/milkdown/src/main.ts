@@ -1,6 +1,6 @@
 import { Crepe } from '@milkdown/crepe'
 import '@milkdown/crepe/theme/common/style.css'
-import '@milkdown/crepe/theme/crepe-dark.css'
+import '@milkdown/crepe/theme/crepe.css'
 import './style.css'
 
 const starterMarkdown = `# Khwarizmi Studio
