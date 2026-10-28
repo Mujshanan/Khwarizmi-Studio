@@ -144,7 +144,7 @@ pub fn format_expression(source: &str) -> String {
                 out.push('\n');
             }
             TokenKind::Comment => {
-                if !out.is_empty() && !out.ends_with([' ', '\n']) { out.push(' '); }
+                if !out.is_empty() && !(out.ends_with(' ') || out.ends_with('\n')) { out.push(' '); }
                 out.push_str(&token.text);
             }
             TokenKind::Operator => {
