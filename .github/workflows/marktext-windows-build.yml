@@ -8,6 +8,7 @@ on:
       - ".github/workflows/marktext-windows-build.yml"
       - ".gitmodules"
       - "vendor/marktext"
+      - "README.md"
   pull_request:
     paths:
       - ".github/workflows/marktext-windows-build.yml"
@@ -35,8 +36,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: pnpm
-          cache-dependency-path: vendor/marktext/pnpm-lock.yaml
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
