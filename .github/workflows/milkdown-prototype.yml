@@ -30,6 +30,26 @@ jobs:
           node-version: 22
       - name: Install dependencies
         run: npm install
+      - name: Report dependency audit findings
+        run: |
+          npm audit --json > audit-report.json || true
+          node --input-type=module -e '
+            import fs from "node:fs";
+            const audit = JSON.parse(fs.readFileSync("audit-report.json", "utf8"));
+            console.log("AUDIT_SUMMARY", JSON.stringify(audit.metadata?.vulnerabilities ?? {}));
+            for (const [name, item] of Object.entries(audit.vulnerabilities ?? {})) {
+              console.log("AUDIT_FINDING", JSON.stringify({
+                name,
+                severity: item.severity,
+                isDirect: item.isDirect,
+                range: item.range,
+                via: item.via.map(v => typeof v === "string" ? {name: v} : {
+                  title: v.title, url: v.url, range: v.range, severity: v.severity
+                }),
+                fixAvailable: item.fixAvailable
+              }));
+            }
+          '
       - name: Type-check and build
         run: npm run build
       - name: Install Chromium
