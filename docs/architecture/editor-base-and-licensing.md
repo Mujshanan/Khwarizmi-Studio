@@ -2,36 +2,42 @@
 
 ## Decision
 
-Use MarkText as the starting point for the Markdown editing experience where its existing architecture is useful, then replace or remove features that conflict with Khwarizmi Studio's engineering-document model. Do not import CalcpadCE's WPF or ASP.NET UI projects.
+Khwarizmi Studio must remain MIT-licensed. Do not adopt or copy Taleno's application code because Taleno is licensed under AGPL-3.0-only and that license is incompatible with the project's required MIT-only distribution strategy.
 
-MarkText's repository license is MIT. MIT generally permits reuse, modification, redistribution, and commercial use, subject to retaining the required copyright and license notice. This is a project-level decision record, not legal advice.
+Taleno may be evaluated as a reference for interaction design and architecture. Its license does not transfer to independent implementations of general ideas, but do not copy its source, assets, or other protectable material. Consult legal counsel for any borderline reuse question.
 
-Reference: https://github.com/marktext/marktext/blob/master/LICENSE
+Primary references:
+- Taleno source and license: https://github.com/BerryUIKI/Taleno
+- Milkdown source and license: https://github.com/Milkdown/milkdown
+- MarkText source and license: https://github.com/marktext/marktext
+
+## MIT-compatible editor options
+
+Evaluate these in order:
+
+1. **Milkdown** as an editor framework, subject to verifying the exact version and all dependencies. Build a Khwarizmi-owned desktop shell and single-pane experience around it rather than forking Taleno.
+2. **MarkText** as the lower-switching-cost fallback, since its upstream project is MIT-licensed and a Windows build already succeeded in this repository.
+3. Other editor frameworks only after checking their actual code, assets, and dependency licenses.
+
+Do not change Khwarizmi Studio's license from MIT. Do not copy Taleno's AGPL-licensed application code into this repository.
 
 ## Required compliance work
 
 Before copying files or shipping a binary:
 
-1. Keep the MarkText MIT license and applicable copyright notices for any reused code.
-2. Track reused files and modifications in a third-party notices document.
-3. Audit the licenses of transitive npm packages and any bundled runtime assets; MarkText's license does not override dependency licenses.
-4. Keep Calcpad-derived code and behavior traceable separately. If any Calcpad source is copied, preserve its copyright and MIT license notices; a clean-room Rust reimplementation should still use upstream behavior tests without copying implementation text.
-5. Verify fonts, icons, themes, sample documents, and other assets independently.
-6. Generate a third-party license report as part of release packaging.
-
-## What to reuse
-
-Potentially reuse the editor shell and interaction patterns: single-pane editing, Markdown-aware rendering, keyboard shortcuts, document navigation, themes, and file open/save workflows.
-
-Do not blindly retain the whole application. Remove unrelated publishing, website, or application features where they add complexity. Establish a minimal desktop build before integrating the calculation engine.
+1. Preserve copyright and license notices for any reused MIT code.
+2. Track reused files, upstream versions, and modifications in a third-party notices document.
+3. Audit transitive npm/Rust dependencies, fonts, icons, themes, sample documents, and bundled runtime assets separately.
+4. Keep Calcpad-derived code and behavior traceable. If any Calcpad source is copied, preserve its notices; a clean-room Rust reimplementation should use behavior tests without copying implementation text.
+5. Generate a third-party license report as part of release packaging.
 
 ## Integration boundary
 
-The editor should communicate with the Rust core through a narrow API. Initially this can be a local process or native binding; choose the bridge after the editor shell and packaging target are verified. The API should accept source text and return structured tokens, diagnostics, symbols, formatting edits, and calculation results. It should not expose UI-specific types from the old C# application.
+The editor should communicate with the Rust calculation core through a narrow API. The API should accept source text and return structured tokens, diagnostics, symbols, formatting edits, and calculation results. It must not expose UI-specific types from the old C# application.
 
 ## Compatibility and safety
 
-- Maintain source text exactly unless the user invokes a formatting action.
+- Maintain Markdown source faithfully unless the user invokes a formatting action.
 - Represent edits as ranges where practical, so the editor can apply them without replacing the whole document.
 - Keep calculation execution local by default.
 - Do not execute arbitrary shell commands or general-purpose code from document content.
@@ -43,5 +49,5 @@ The editor should communicate with the Rust core through a narrow API. Initially
 - The editor is a continuous single-pane surface, with source mode available as a fallback.
 - A `calcpad` fence is visually distinguishable and can show parser diagnostics.
 - Ordinary code fences are never evaluated.
-- Reused MarkText code retains its license notices.
+- Reused code retains its original license notices.
 - A clean checkout can build the minimal desktop editor before any Calcpad compatibility claim is made.

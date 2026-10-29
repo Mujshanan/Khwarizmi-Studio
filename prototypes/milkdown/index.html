@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#171a21" />
+    <title>Khwarizmi Studio — Editor Prototype</title>
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <a class="brand" href="#" aria-label="Khwarizmi Studio home">
+          <span class="brand-mark">K</span>
+          <span><strong>Khwarizmi</strong><small>ENGINEERING STUDIO</small></span>
+        </a>
+        <div class="document-name" id="document-name">Untitled.md <span class="saved-dot" title="Local prototype"></span></div>
+        <div class="toolbar-actions">
+          <button id="open-button" class="button secondary" type="button">Open .md</button>
+          <button id="source-button" class="button secondary" type="button">Source mode</button>
+          <button id="save-button" class="button primary" type="button">Save .md</button>
+          <input id="file-input" type="file" accept=".md,.markdown,.txt,text/markdown,text/plain" hidden />
+        </div>
+      </header>
+      <main class="workspace">
+        <aside class="rail" aria-label="Workspace">
+          <button class="rail-button active" title="Document" aria-label="Document">▤</button>
+          <button class="rail-button" title="Calculations" aria-label="Calculations">∑</button>
+          <button class="rail-button" title="Structure (preview)" aria-label="Structure">☷</button>
+          <div class="rail-bottom">MIT</div>
+        </aside>
+        <section class="document-area">
+          <div class="document-toolbar">
+            <span class="breadcrumb">WORKSPACE <span>/</span> DOCUMENT</span>
+            <span id="mode-label" class="mode-label">VISUAL MARKDOWN</span>
+          </div>
+          <div class="editor-scroll">
+            <div id="editor" class="editor"></div>
+            <textarea id="source-editor" class="source-editor" spellcheck="false" aria-label="Markdown source" hidden></textarea>
+          </div>
+          <footer class="statusbar">
+            <span id="status-message">Ready · Markdown source is preserved on save</span>
+            <span id="document-stats">0 words · 0 calculation blocks</span>
+          </footer>
+        </section>
+        <aside class="inspector">
+          <div class="inspector-heading"><span class="inspector-icon">∑</span><div><strong>Calculation panel</strong><small>LOCAL PREVIEW</small></div></div>
+          <div class="inspector-card">
+            <div class="card-label">CALCPAD BLOCKS</div>
+            <div class="big-number" id="calc-count">0</div>
+            <p>Explicit <code>calcpad</code> fences detected in this document.</p>
+          </div>
+          <div class="inspector-card">
+            <div class="card-label">ENGINE STATUS</div>
+            <div class="status-line"><span class="status-dot"></span><strong>Not connected</strong></div>
+            <p>This prototype does not execute calculations. Results will be connected to the Rust engine in a later step.</p>
+          </div>
+          <div class="inspector-note"><strong>Source safety</strong><p>Saving exports Markdown text. Calculation fences are never evaluated by this prototype.</p></div>
+        </aside>
+      </main>
+    </div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
