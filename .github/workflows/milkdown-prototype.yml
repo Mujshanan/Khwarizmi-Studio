@@ -13,7 +13,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   build:
@@ -30,6 +30,17 @@ jobs:
           node-version: 22
       - name: Install dependencies
         run: npm install
+      - name: Commit generated lockfile on branch pushes
+        if: github.event_name == 'push'
+        working-directory: .
+        run: |
+          if [ ! -f prototypes/milkdown/package-lock.json ]; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add prototypes/milkdown/package-lock.json
+            git commit -m "chore: lock prototype dependencies [skip ci]"
+            git push
+          fi
       - name: Report dependency audit findings
         run: |
           npm audit --json > audit-report.json || true
