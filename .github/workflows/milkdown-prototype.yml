@@ -16,36 +16,6 @@ permissions:
   contents: read
 
 jobs:
-  lockfile:
-    if: github.event_name == 'push'
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    defaults:
-      run:
-        working-directory: prototypes/milkdown
-    steps:
-      - name: Check out repository
-        uses: actions/checkout@v4
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-      - name: Generate deterministic dependency lockfile
-        run: npm install --package-lock-only
-      - name: Commit lockfile
-        working-directory: .
-        run: |
-          if [ -f prototypes/milkdown/package-lock.json ]; then
-            git config user.name "github-actions[bot]"
-            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git add prototypes/milkdown/package-lock.json
-            if ! git diff --cached --quiet; then
-              git commit -m "chore: lock prototype dependencies [skip ci]"
-              git push
-            fi
-          fi
-
   build:
     runs-on: ubuntu-latest
     defaults:
@@ -58,8 +28,8 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Install dependencies
-        run: npm install
+      - name: Install locked dependencies
+        run: npm ci
       - name: Report dependency audit findings
         run: |
           npm audit --json > audit-report.json || true
