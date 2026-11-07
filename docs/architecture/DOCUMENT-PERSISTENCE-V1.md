@@ -43,3 +43,9 @@ The adapter now captures a canonical JSON copy before asynchronous digest calcul
 Filesystem errors other than recognized corruption (for example, permission errors and I/O failures) continue to propagate to the host. A missing authored document makes an otherwise digest-valid snapshot stale. A changed authored revision or engine version also makes the snapshot stale; it is never returned as current.
 
 The adapter still does not provide cross-process locking, multi-writer conflict resolution, orphan-temporary-file scavenging after power loss, directory-entry fsync guarantees, or transactional coordination with BlockSuite. Atomic rename protects readers from observing a partially written target file, but these omitted guarantees must be addressed and tested in the production host before claiming full crash durability. Concurrent writers are therefore not a supported consistency model in this version.
+
+### Same-process write ordering and temporary-file recovery
+
+The file-store adapter serializes authored-document saves, evaluation-snapshot saves, and snapshot invalidation by document ID within one Node process. This prevents two calls through the same process from interleaving their read/validate/replace sequence. It is not an inter-process lock: separate Electron processes or multiple application instances can still race, and multi-writer operation remains unsupported.
+
+Abandoned atomic-write files use the reserved `.tmp-<UUID>` name. Hosts may call `cleanupAbandonedTemporaryFiles(maxAgeMs)` during an explicit maintenance window; the default age threshold is 24 hours. Cleanup removes only matching regular files older than the threshold and leaves recent temporary files and unrelated files untouched. It is not run automatically during normal reads or writes. The host must ensure that no other process is actively writing into the store before running cleanup.
