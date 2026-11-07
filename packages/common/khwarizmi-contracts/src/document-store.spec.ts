@@ -1,4 +1,4 @@
-import { mkdtemp, readFile, rm, utimes, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, readFile, rm, utimes, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -184,6 +184,7 @@ describe('durable authored-document storage', () => {
 
   it('rejects invalid authored JSON instead of treating it as a missing document', async () => {
     const { store, root } = await createStore();
+    await mkdir(join(root, 'doc-test'), { recursive: true });
     await writeFile(
       join(root, 'doc-test', 'authored-document.json'),
       '{invalid'
