@@ -4,8 +4,8 @@ import { join } from 'node:path';
 
 import { afterEach, describe, expect, it } from 'vitest';
 
-import { FileDocumentStore, verifyDocumentIntake } from './document-store.js';
 import { canonicalSha256 } from './document-integrity.js';
+import { FileDocumentStore, verifyDocumentIntake } from './document-store.js';
 
 const directories: string[] = [];
 
