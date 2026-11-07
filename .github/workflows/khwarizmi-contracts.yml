@@ -37,3 +37,16 @@ jobs:
           full-cache: true
       - name: Run Khwarizmi contract suite
         run: yarn workspace @khwarizmi/contracts test:fixtures
+
+  windows-storage:
+    name: Windows x64 file-store tests
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Setup Node.js and workspace dependencies
+        uses: ./.github/actions/setup-node
+        with:
+          electron-install: false
+          full-cache: true
+      - name: Run Khwarizmi contract and persistence suite
+        run: yarn workspace @khwarizmi/contracts test:fixtures
