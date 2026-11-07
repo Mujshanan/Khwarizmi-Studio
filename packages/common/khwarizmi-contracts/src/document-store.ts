@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { mkdir, open, readFile, rename, rm } from 'node:fs/promises';
+import { mkdir, open, readFile, readdir, rename, rm, stat } from 'node:fs/promises';
 import { dirname, join, resolve } from 'node:path';
 
 import {
@@ -84,6 +84,29 @@ function isKnownAuthoredDocumentIntegrityError(error: unknown): boolean {
   );
 }
 
+
+const documentWriteLocks = new Map<string, Promise<void>>();
+
+async function withDocumentWriteLock<T>(
+  key: string,
+  operation: () => Promise<T>
+): Promise<T> {
+  const previous = documentWriteLocks.get(key) ?? Promise.resolve();
+  let release!: () => void;
+  const current = new Promise<void>(resolveLock => {
+    release = resolveLock;
+  });
+  documentWriteLocks.set(key, current);
+  await previous;
+  try {
+    return await operation();
+  } finally {
+    release();
+    if (documentWriteLocks.get(key) === current)
+      documentWriteLocks.delete(key);
+  }
+}
+
 async function readJson(path: string): Promise<unknown> {
   return JSON.parse(await readFile(path, 'utf8'));
 }
@@ -156,15 +179,23 @@ export class FileDocumentStore {
       typeof persistedDocument.documentId !== 'string'
     )
       throw new TypeError('AUTHORED_DOCUMENT_ID_INVALID');
-    const digest = await canonicalSha256(persistedDocument);
-    const envelope: AuthoredDocumentEnvelope<TDocument> = {
-      format: 'khwarizmi.authored-document',
-      schemaVersion: 1,
-      digest,
-      document: persistedDocument,
-    };
-    await atomicWrite(this.documentPath(persistedDocument.documentId), envelope);
-    return digest;
+    return withDocumentWriteLock(
+      this.documentDirectory(persistedDocument.documentId),
+      async () => {
+        const digest = await canonicalSha256(persistedDocument);
+        const envelope: AuthoredDocumentEnvelope<TDocument> = {
+          format: 'khwarizmi.authored-document',
+          schemaVersion: 1,
+          digest,
+          document: persistedDocument,
+        };
+        await atomicWrite(
+          this.documentPath(persistedDocument.documentId),
+          envelope
+        );
+        return digest;
+      }
+    );
   }
 
   async loadDocument<TDocument = unknown>(
@@ -200,40 +231,45 @@ export class FileDocumentStore {
     documentId: string,
     snapshot: TSnapshot
   ): Promise<string> {
-    const persistedSnapshot = JSON.parse(
-      canonicalizeJson(snapshot)
-    ) as TSnapshot;
-    if (!isSnapshotIdentity(persistedSnapshot))
-      throw new Error('SNAPSHOT_IDENTITY_INVALID');
-    if (persistedSnapshot.engine.name !== 'cortexjs-compute-engine')
-      throw new Error('SNAPSHOT_ENGINE_NAME_MISMATCH');
-    if (persistedSnapshot.documentId !== documentId)
-      throw new Error('SNAPSHOT_DOCUMENT_ID_MISMATCH');
-    const authored = await this.loadDocument<Record<string, unknown>>(documentId);
-    if (!authored) throw new Error('AUTHORED_DOCUMENT_NOT_FOUND');
-    if (authored.documentRevision !== persistedSnapshot.documentRevision)
-      throw new Error('SNAPSHOT_DOCUMENT_REVISION_MISMATCH');
-    const authoredDocument = authored.document as Record<string, unknown>;
-    if (
-      authoredDocument.semanticVersion !== persistedSnapshot.semanticVersion ||
-      authoredDocument.unitRegistryVersion !== persistedSnapshot.unitRegistryVersion
-    )
-      throw new Error('SNAPSHOT_SEMANTIC_IDENTITY_MISMATCH');
-    if (
-      this.options.expectedEngineVersion !== undefined &&
-      persistedSnapshot.engine.version !== this.options.expectedEngineVersion
-    )
-      throw new Error('SNAPSHOT_ENGINE_VERSION_MISMATCH');
+    return withDocumentWriteLock(
+      this.documentDirectory(documentId),
+      async () => {
+      const persistedSnapshot = JSON.parse(
+        canonicalizeJson(snapshot)
+      ) as TSnapshot;
+      if (!isSnapshotIdentity(persistedSnapshot))
+        throw new Error('SNAPSHOT_IDENTITY_INVALID');
+      if (persistedSnapshot.engine.name !== 'cortexjs-compute-engine')
+        throw new Error('SNAPSHOT_ENGINE_NAME_MISMATCH');
+      if (persistedSnapshot.documentId !== documentId)
+        throw new Error('SNAPSHOT_DOCUMENT_ID_MISMATCH');
+      const authored = await this.loadDocument<Record<string, unknown>>(documentId);
+      if (!authored) throw new Error('AUTHORED_DOCUMENT_NOT_FOUND');
+      if (authored.documentRevision !== persistedSnapshot.documentRevision)
+        throw new Error('SNAPSHOT_DOCUMENT_REVISION_MISMATCH');
+      const authoredDocument = authored.document as Record<string, unknown>;
+      if (
+        authoredDocument.semanticVersion !== persistedSnapshot.semanticVersion ||
+        authoredDocument.unitRegistryVersion !== persistedSnapshot.unitRegistryVersion
+      )
+        throw new Error('SNAPSHOT_SEMANTIC_IDENTITY_MISMATCH');
+      if (
+        this.options.expectedEngineVersion !== undefined &&
+        persistedSnapshot.engine.version !== this.options.expectedEngineVersion
+      )
+        throw new Error('SNAPSHOT_ENGINE_VERSION_MISMATCH');
 
-    const digest = await canonicalSha256(persistedSnapshot);
-    const envelope: EvaluationSnapshotEnvelope<TSnapshot> = {
-      format: 'khwarizmi.evaluation-snapshot',
-      schemaVersion: 1,
-      digest,
-      snapshot: persistedSnapshot,
-    };
-    await atomicWrite(this.snapshotPath(documentId), envelope);
-    return digest;
+      const digest = await canonicalSha256(persistedSnapshot);
+      const envelope: EvaluationSnapshotEnvelope<TSnapshot> = {
+        format: 'khwarizmi.evaluation-snapshot',
+        schemaVersion: 1,
+        digest,
+        snapshot: persistedSnapshot,
+      };
+      await atomicWrite(this.snapshotPath(documentId), envelope);
+      return digest;
+      }
+    );
   }
 
   async loadEvaluationSnapshot<TSnapshot extends EvaluationSnapshotIdentity>(
@@ -307,6 +343,57 @@ export class FileDocumentStore {
   }
 
   async invalidateEvaluationSnapshot(documentId: string): Promise<void> {
-    await rm(this.snapshotPath(documentId), { force: true });
+    await withDocumentWriteLock(this.documentDirectory(documentId), async () => {
+      await rm(this.snapshotPath(documentId), { force: true });
+    });
+  }
+
+  /**
+   * Remove abandoned atomic-write temporary files older than maxAgeMs.
+   * This is explicit rather than automatic so callers can choose a safe
+   * maintenance window. The default age avoids touching active writes.
+   */
+  async cleanupAbandonedTemporaryFiles(
+    maxAgeMs = 24 * 60 * 60 * 1000
+  ): Promise<number> {
+    if (!Number.isFinite(maxAgeMs) || maxAgeMs <= 0)
+      throw new TypeError('maxAgeMs must be a positive finite number');
+
+    let documentDirectories: string[];
+    try {
+      documentDirectories = await readdir(this.root);
+    } catch (error) {
+      if (isRecord(error) && error.code === 'ENOENT') return 0;
+      throw error;
+    }
+
+    const cutoff = Date.now() - maxAgeMs;
+    let removed = 0;
+    for (const directory of documentDirectories) {
+      const directoryPath = join(this.root, directory);
+      let entries: string[];
+      try {
+        entries = await readdir(directoryPath);
+      } catch (error) {
+        if (isRecord(error) && error.code === 'ENOTDIR') continue;
+        if (isRecord(error) && error.code === 'ENOENT') continue;
+        throw error;
+      }
+      for (const entry of entries) {
+        if (!/^\\.tmp-[0-9a-f-]+$/i.test(entry)) continue;
+        const temporaryPath = join(directoryPath, entry);
+        try {
+          const details = await stat(temporaryPath);
+          if (details.isFile() && details.mtimeMs < cutoff) {
+            await rm(temporaryPath, { force: true });
+            removed += 1;
+          }
+        } catch (error) {
+          if (isRecord(error) && error.code === 'ENOENT') continue;
+          throw error;
+        }
+      }
+    }
+    return removed;
   }
 }
