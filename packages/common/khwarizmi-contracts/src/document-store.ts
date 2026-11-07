@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { mkdir, open, readFile, readdir, rename, rm, stat } from 'node:fs/promises';
+import { mkdir, open, readFile, readdir, rename, rm, lstat } from 'node:fs/promises';
 import { dirname, join, resolve } from 'node:path';
 
 import {
@@ -373,6 +373,9 @@ export class FileDocumentStore {
       const directoryPath = join(this.root, directory);
       let entries: string[];
       try {
+        const directoryDetails = await lstat(directoryPath);
+        if (!directoryDetails.isDirectory() || directoryDetails.isSymbolicLink())
+          continue;
         entries = await readdir(directoryPath);
       } catch (error) {
         if (isRecord(error) && error.code === 'ENOTDIR') continue;
@@ -383,7 +386,7 @@ export class FileDocumentStore {
         if (!/^\.tmp-[0-9a-f-]+$/i.test(entry)) continue;
         const temporaryPath = join(directoryPath, entry);
         try {
-          const details = await stat(temporaryPath);
+          const details = await lstat(temporaryPath);
           if (details.isFile() && details.mtimeMs < cutoff) {
             await rm(temporaryPath, { force: true });
             removed += 1;
