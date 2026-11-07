@@ -234,40 +234,40 @@ export class FileDocumentStore {
     return withDocumentWriteLock(
       this.documentDirectory(documentId),
       async () => {
-      const persistedSnapshot = JSON.parse(
-        canonicalizeJson(snapshot)
-      ) as TSnapshot;
-      if (!isSnapshotIdentity(persistedSnapshot))
-        throw new Error('SNAPSHOT_IDENTITY_INVALID');
-      if (persistedSnapshot.engine.name !== 'cortexjs-compute-engine')
-        throw new Error('SNAPSHOT_ENGINE_NAME_MISMATCH');
-      if (persistedSnapshot.documentId !== documentId)
-        throw new Error('SNAPSHOT_DOCUMENT_ID_MISMATCH');
-      const authored = await this.loadDocument<Record<string, unknown>>(documentId);
-      if (!authored) throw new Error('AUTHORED_DOCUMENT_NOT_FOUND');
-      if (authored.documentRevision !== persistedSnapshot.documentRevision)
-        throw new Error('SNAPSHOT_DOCUMENT_REVISION_MISMATCH');
-      const authoredDocument = authored.document as Record<string, unknown>;
-      if (
-        authoredDocument.semanticVersion !== persistedSnapshot.semanticVersion ||
-        authoredDocument.unitRegistryVersion !== persistedSnapshot.unitRegistryVersion
-      )
-        throw new Error('SNAPSHOT_SEMANTIC_IDENTITY_MISMATCH');
-      if (
-        this.options.expectedEngineVersion !== undefined &&
-        persistedSnapshot.engine.version !== this.options.expectedEngineVersion
-      )
-        throw new Error('SNAPSHOT_ENGINE_VERSION_MISMATCH');
+          const persistedSnapshot = JSON.parse(
+            canonicalizeJson(snapshot)
+          ) as TSnapshot;
+          if (!isSnapshotIdentity(persistedSnapshot))
+            throw new Error('SNAPSHOT_IDENTITY_INVALID');
+          if (persistedSnapshot.engine.name !== 'cortexjs-compute-engine')
+            throw new Error('SNAPSHOT_ENGINE_NAME_MISMATCH');
+          if (persistedSnapshot.documentId !== documentId)
+            throw new Error('SNAPSHOT_DOCUMENT_ID_MISMATCH');
+          const authored = await this.loadDocument<Record<string, unknown>>(documentId);
+          if (!authored) throw new Error('AUTHORED_DOCUMENT_NOT_FOUND');
+          if (authored.documentRevision !== persistedSnapshot.documentRevision)
+            throw new Error('SNAPSHOT_DOCUMENT_REVISION_MISMATCH');
+          const authoredDocument = authored.document as Record<string, unknown>;
+          if (
+            authoredDocument.semanticVersion !== persistedSnapshot.semanticVersion ||
+            authoredDocument.unitRegistryVersion !== persistedSnapshot.unitRegistryVersion
+          )
+            throw new Error('SNAPSHOT_SEMANTIC_IDENTITY_MISMATCH');
+          if (
+            this.options.expectedEngineVersion !== undefined &&
+            persistedSnapshot.engine.version !== this.options.expectedEngineVersion
+          )
+            throw new Error('SNAPSHOT_ENGINE_VERSION_MISMATCH');
 
-      const digest = await canonicalSha256(persistedSnapshot);
-      const envelope: EvaluationSnapshotEnvelope<TSnapshot> = {
-        format: 'khwarizmi.evaluation-snapshot',
-        schemaVersion: 1,
-        digest,
-        snapshot: persistedSnapshot,
-      };
-      await atomicWrite(this.snapshotPath(documentId), envelope);
-      return digest;
+          const digest = await canonicalSha256(persistedSnapshot);
+          const envelope: EvaluationSnapshotEnvelope<TSnapshot> = {
+            format: 'khwarizmi.evaluation-snapshot',
+            schemaVersion: 1,
+            digest,
+            snapshot: persistedSnapshot,
+          };
+          await atomicWrite(this.snapshotPath(documentId), envelope);
+          return digest;
       }
     );
   }
@@ -380,7 +380,7 @@ export class FileDocumentStore {
         throw error;
       }
       for (const entry of entries) {
-        if (!/^\\.tmp-[0-9a-f-]+$/i.test(entry)) continue;
+        if (!/^\.tmp-[0-9a-f-]+$/i.test(entry)) continue;
         const temporaryPath = join(directoryPath, entry);
         try {
           const details = await stat(temporaryPath);
