@@ -1,4 +1,4 @@
-import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { mkdtemp, readFile, rm, utimes, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -232,4 +232,45 @@ describe('durable authored-document storage', () => {
       store.loadEvaluationSnapshot<ReturnType<typeof snapshot>>('doc-test')
     ).resolves.toEqual({ status: 'missing' });
   });
+
+  it('serializes concurrent writes to the same authored document', async () => {
+    const { store } = await createStore();
+    const first = { ...document, title: 'first' };
+    const second = { ...document, title: 'second' };
+
+    const [firstRevision, secondRevision] = await Promise.all([
+      store.saveDocument(first),
+      store.saveDocument(second),
+    ]);
+
+    const loaded = await store.loadDocument<typeof second>('doc-test');
+    expect(loaded).toEqual({
+      document: second,
+      documentRevision: secondRevision,
+    });
+    expect(firstRevision).not.toBe(secondRevision);
+  });
+
+  it('removes only old atomic-write temporary files during explicit cleanup', async () => {
+    const { store, root } = await createStore();
+    await store.saveDocument(document);
+    const oldTemporary = join(root, 'doc-test', '.tmp-00000000-0000-4000-8000-000000000001');
+    const recentTemporary = join(root, 'doc-test', '.tmp-00000000-0000-4000-8000-000000000002');
+    const unrelatedFile = join(root, 'doc-test', 'keep.tmp');
+    await Promise.all([
+      writeFile(oldTemporary, 'abandoned'),
+      writeFile(recentTemporary, 'active'),
+      writeFile(unrelatedFile, 'keep'),
+    ]);
+    const oldDate = new Date(Date.now() - 60_000);
+    await utimes(oldTemporary, oldDate, oldDate);
+
+    await expect(store.cleanupAbandonedTemporaryFiles(30_000)).resolves.toBe(1);
+    await expect(readFile(oldTemporary, 'utf8')).rejects.toMatchObject({
+      code: 'ENOENT',
+    });
+    await expect(readFile(recentTemporary, 'utf8')).resolves.toBe('active');
+    await expect(readFile(unrelatedFile, 'utf8')).resolves.toBe('keep');
+  });
+
 });
