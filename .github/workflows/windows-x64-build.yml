@@ -1,0 +1,70 @@
+name: Windows x64 Desktop Build
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - canary
+    paths:
+      - '.github/workflows/windows-x64-build.yml'
+      - 'packages/frontend/apps/electron/**'
+      - 'packages/frontend/apps/**'
+      - 'packages/**'
+      - 'blocksuite/**'
+      - 'tools/**'
+      - 'yarn.lock'
+      - 'package.json'
+      - '.yarnrc.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: windows-x64-build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-windows-x64:
+    name: Package Windows x64 desktop app
+    runs-on: windows-latest
+    timeout-minutes: 90
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.12.0
+          cache: yarn
+
+      - name: Install dependencies
+        run: yarn install --immutable
+
+      - name: Build Electron application layers
+        run: yarn workspace @affine/electron build
+        env:
+          BUILD_TYPE: canary
+
+      - name: Create Windows x64 packages
+        run: yarn workspace @affine/electron make --arch=x64 --platform=win32
+        env:
+          BUILD_TYPE: canary
+
+      - name: Create NSIS installer
+        run: yarn workspace @affine/electron make-nsis --arch=x64 --platform=win32
+        env:
+          BUILD_TYPE: canary
+
+      - name: Upload Windows installers and portable ZIP
+        uses: actions/upload-artifact@v4
+        with:
+          name: khwarizmi-studio-windows-x64
+          path: packages/frontend/apps/electron/out/canary/make/
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 30
