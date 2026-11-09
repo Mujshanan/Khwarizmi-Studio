@@ -10,7 +10,7 @@
 - Preserve authored material independently of calculation outputs.
 - Support page-oriented A4 and custom-size documents.
 - Support text, equations, variables, input data, tables, diagrams, references, and result regions.
-- Support flexible multi-column placement and side-by-side input/expression/result layouts.
+- Support ordered page-flow regions and fixed one-to-four-column containers for side-by-side input/expression/result layouts; arbitrary free positioning is out of scope.
 - Keep stable IDs across reorder, editing, save/reload, and migration.
 - Make document migrations explicit and testable.
 
@@ -31,19 +31,17 @@ Evaluation output is not authored content. It is stored separately as a derived 
 
 ## 3. Page model and coordinates
 
-Each page has a stable `pageId`, a physical width and height, orientation, margins, and ordered layout regions.
+Each page has a stable `pageId`, physical width and height, orientation, margins, and ordered flow regions.
 
-**Accepted canonical geometry:** integer micrometres (`um`) for page dimensions, margins, and region geometry. Use a page-local top-left origin; +X points right and +Y points down. Support named standard page presets and custom dimensions. Convert to CSS pixels only at the rendering boundary using the configured display scale. Zoom and device-pixel ratio never change persisted physical layout.
+**Accepted canonical geometry:** page dimensions, margins, and explicit layout gaps are integer micrometres (`um`). Use a page-local top-left origin; +X points right and +Y points down. Support named standard page presets and custom dimensions. Convert derived layout bounds to CSS pixels only at the rendering boundary. Zoom and device-pixel ratio never change persisted physical page geometry.
 
-A region has:
+A region has a stable `regionId`, a `flowOrder`, and one of two v1 kinds:
+- `flow`: an ordered `childBlockIds[]` vertical stream;
+- `columns`: an ordered `columns[]` collection. Each column has a stable `columnId`, ordered `childBlockIds[]`, and `widthBasisPoints`; the region also stores `gapUm`.
 
-- stable `regionId`;
-- `kind` (flow, grid, column, or positioned);
-- physical bounds `x, y, width, height`;
-- z-order where overlap is supported;
-- child block IDs and region-specific layout properties.
+Column count is 1–4 (one column normalizes to `flow`). Widths are integer basis points, sum exactly to 10,000, and are each at least 1,500. The default two-column layout is 5,000/5,000 with a 6,000 µm gap. Rendered region and column bounds are derived from page content width, margins, widths, and gaps. Arbitrary region `x/y`, z-order, overlap, and free positioning are not part of v1 authored data. Nested columns are deferred.
 
-Coordinates are page-local, top-left origin, positive x rightward and positive y downward. Geometry MUST be finite, non-negative where applicable, and within declared page bounds unless an explicit overflow policy is enabled. Renderer zoom/pan is view state and MUST NOT be persisted as page geometry.
+The layout engine MUST produce finite bounds within the page's content area or a deterministic pagination/overflow diagnostic. Renderer zoom/pan is view state and MUST NOT be persisted as page geometry.
 
 ## 4. Block model
 
@@ -87,6 +85,6 @@ BlockSuite may represent and edit visual blocks, selection, and ordering. An ada
 
 ## 8. Accepted decisions and remaining schema work
 
-Canonical page geometry is accepted as integer micrometres, top-left origin, +X right, +Y down, with standard presets and custom dimensions. Scalar-only v1 values and the assignment/scope rules are defined in CALCULATION-SEMANTICS.md and DECISIONS.md.
+Canonical page geometry is accepted as integer micrometres, top-left origin, +X right, +Y down, with standard presets and custom dimensions. V1 layout is ordered page flow with fixed one-to-four-column containers; it does not persist arbitrary region coordinates or support free positioning. Scalar-only v1 values and assignment/scope rules are defined in CALCULATION-SEMANTICS.md and DECISIONS.md.
 
 The implementation team must still encode the accepted layout modes and asset policy in exact schema fields, define block content-version rules and stable ID syntax, and provide deterministic migration fixtures. V1 assets are embedded only with SHA-256 identity and the limits recorded in PR-3-DECISION-RESOLUTION.md. No remote asset is fetched implicitly during validation or evaluation.
