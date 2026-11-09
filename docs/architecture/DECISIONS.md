@@ -134,6 +134,16 @@ The canonical authored document revision identity is SHA-256 over RFC 8785 JCS b
 
 Use JSON Schema 2020-12 for v1 schemas. Reject unknown major schema versions and unknown core properties in strict validation. Preserve unknown namespaced extensions through safe round trips. Migrations are deterministic and preserve stable IDs and authored values.
 
+### ADR-019 — Fixed flow-based multi-column worksheet layout
+
+**Status:** Accepted
+
+The worksheet uses ordered page-flow regions. A region may be a normal single-column flow or a fixed multi-column container with one to four independently flowing columns. Columns are a layout container, not free-positioned objects and not calculation scopes.
+
+Column widths are stored as integer basis points that sum to 10,000; each column has a minimum width of 1,500 basis points. The default two-column layout uses equal widths. Column gaps are stored in integer micrometres. The layout engine derives rendered bounds from page width, margins, column widths, and gaps.
+
+V1 MUST NOT support arbitrary x/y placement, z-order, overlap, absolute positioning, or drag-anywhere canvas behavior. Blocks can be reordered within a column or moved between columns using explicit layout commands. These visual operations MUST preserve stable block IDs, symbol/assignment identities, calculation order, and evaluation history. Column membership and visual order never define calculation semantics.
+
 ## Remaining implementation-team work
 
 The owner-level product decisions above are resolved. Before schemas are declared stable, the team must still specify and test:

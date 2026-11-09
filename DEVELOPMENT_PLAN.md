@@ -43,10 +43,10 @@ Architecture documents: [Contract index](./docs/architecture/README.md).
 ## Phase 2 — Worksheet interaction foundation
 
 - [ ] Establish a page-oriented worksheet experience on BlockSuite.
-- [ ] Support flexible placement and multi-column composition.
+- [ ] Support ordered page-flow regions and fixed one-to-four-column containers; arbitrary free positioning is out of scope.
 - [ ] Define selection, editing, keyboard, and navigation behavior.
 - [ ] Add equation, text, table, and result content blocks.
-- [ ] Support side-by-side input/expression and result presentation.
+- [ ] Support side-by-side input/expression and result presentation using the fixed multi-column layout contract.
 - [ ] Preserve document structure through save, reload, and migration.
 
 **Exit criteria:** users can create, arrange, save, reopen, and edit a representative worksheet.

@@ -19,6 +19,7 @@ These documents define the contracts that application/editor and calculation-hos
 - [Decision record](./DECISIONS.md)
 - [Document and worksheet model](./DOCUMENT-MODEL.md)
 - [BlockSuite integration contract](./BLOCKSUITE-INTEGRATION-CONTRACT.md)
+- [Fixed multi-column worksheet layout](./WORKSHEET-COLUMN-LAYOUT.md)
 - [Expression and calculation semantics](./CALCULATION-SEMANTICS.md)
 - [Calculation host and RPC v1](./RPC-V1.md)
 - [Contract conformance plan](./CONFORMANCE.md)
