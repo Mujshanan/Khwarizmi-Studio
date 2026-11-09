@@ -20,7 +20,7 @@ The adapter MUST use public BlockSuite/AFFiNE extension and transaction APIs. It
 | Block editing, text editing, selection, focus, drag, resize, undo/redo       | BlockSuite                        | Editor mechanics only                             |
 | BlockSuite model and transaction APIs                                        | BlockSuite                        | Access only through the integration adapter       |
 | Engineering document schema and stable IDs                                   | Khwarizmi Core                    | Canonical semantic model                          |
-| Page size, margins, physical coordinates and layout constraints              | Khwarizmi Core                    | Persist integer micrometres                       |
+| Page size, margins and flow/column layout constraints                        | Khwarizmi Core                    | Persist page geometry and explicit gaps in integer micrometres; derive region bounds |
 | Expression AST, symbol resolution, assignment versions and calculation order | Khwarizmi Core                    | Never inferred from visual order                  |
 | Unit registry, dimensions, conversions and diagnostics                       | Khwarizmi Core                    | Versioned and validated                           |
 | Table semantics, typed cells and matrix/vector projections                   | Khwarizmi Core                    | BlockSuite renders/edits through commands         |
@@ -73,7 +73,7 @@ All writes flow through a Khwarizmi command API. UI code MUST NOT mutate canonic
 Initial commands:
 
 - `InsertBlock`, `DeleteBlock`, `UpdateBlockContent`;
-- `MoveBlock`, `ResizeRegion`, `ReorderRegion`;
+- `MoveBlock`, `MoveBlockToColumn`, `ResizeRegion`, `ReorderRegion`, `SetColumnWidths`, `SetColumnGap`;
 - `SetPageGeometry`;
 - `SetExpression`, `AssignSymbol`, `SetInputValue`;
 - `UpdateTableCell`, `ResizeTable`;
@@ -99,11 +99,19 @@ Page, region, and block order are presentation/layout data. `calculationOrder` i
 
 ## 7. Page geometry and coordinate conversion
 
-Khwarizmi persists page dimensions, margins, regions and engineering geometry as integer micrometres (`um`), with a page-local top-left origin, +X right and +Y down. BlockSuite may use editor-space coordinates and CSS pixels internally.
+Khwarizmi persists page dimensions, margins, and explicit layout gaps as integer micrometres (`um`), with a page-local top-left origin, +X right and +Y down. BlockSuite may use CSS pixels internally, but rendered region/column bounds are derived from page content width, margins, and the authored flow layout. Arbitrary region x/y coordinates and z-order are not persisted in v1.
 
-The adapter MUST perform explicit conversions at the rendering/input boundary. Zoom, pan, device-pixel ratio, scroll position and viewport size MUST NOT change persisted physical geometry. Rounding MUST be deterministic and specified by the adapter; no floating-point CSS coordinate may be written directly into the canonical physical model.
+The adapter MUST perform deterministic conversions at the rendering/input boundary. Zoom, pan, device-pixel ratio, scroll position, and viewport size MUST NOT change persisted physical page geometry or column proportions. No floating-point CSS coordinate may be written directly into the canonical physical model.
 
-A page resize or preset change is a `SetPageGeometry` command. It MUST define how existing regions are preserved, clipped, or reflowed; the default is preserve physical coordinates and report out-of-bounds regions rather than silently scaling engineering geometry.
+A page resize or preset change is a `SetPageGeometry` command. It MUST reflow ordered regions using the available content width and report content that cannot fit; it MUST NOT silently scale engineering geometry or convert flow regions into positioned objects.
+
+### 7.1 Fixed multi-column layout
+
+The worksheet uses ordered page-flow regions only. A region is either a normal vertical flow or a fixed multi-column container with one to four columns. The container and column children are Khwarizmi-owned custom BlockSuite blocks (proposed `kz:columns` and `kz:column`) registered through supported extension APIs.
+
+Column widths are integer basis points summing to 10,000, each at least 1,500; the default two-column layout is equal width. The gap is stored in integer micrometres. The renderer derives pixel bounds from available page content width, margins, widths, and gap. Narrow viewports may stack columns for presentation without changing the authored document.
+
+V1 does not support arbitrary region x/y coordinates, z-order, overlap, floating blocks, or drag-anywhere placement. Nested columns are deferred. Each column contains an ordered list of stable block IDs; blocks may be reordered or moved between columns through atomic Khwarizmi commands. All layout actions are presentation-only and MUST preserve calculation order, variable scope, symbol IDs, assignment IDs, and evaluation history. Columns do not create calculation scopes.
 
 ## 8. Tables, diagrams and structural objects
 
@@ -144,17 +152,19 @@ The adapter contract is independently versioned from the Khwarizmi document sche
 ## 12. Required conformance tests
 
 1. Create/edit/save/reopen a multi-page worksheet and compare canonical authored documents.
-2. Move/reorder a math block visually and prove evaluation results and calculation order are unchanged.
-3. Explicitly change calculation order and prove the new sequence is applied.
-4. Undo/redo a variable assignment and verify assignment versions and revision digests.
-5. Resize a page and prove physical micrometre geometry is deterministic.
-6. Edit a table cell, convert table ↔ matrix/vector, save/reopen, and preserve IDs/provenance.
-7. Edit beam/frame geometry and prove the structured model—not a screenshot—is persisted.
-8. Recompute shear/moment diagrams and verify they are tied to the correct source revision.
-9. Reject stale evaluation results after an authored edit.
-10. Save/reopen in local-only mode with cloud services disabled.
-11. Simulate an unknown BlockSuite transaction and prove it cannot mutate calculation meaning.
-12. Run the adapter suite against every supported BlockSuite version and the mandatory Windows host build.
+2. Create two-, three-, and four-column regions; validate width sums, minimum widths, gaps, and stable IDs.
+3. Move blocks between columns and prove calculation order, variable scope, and evaluation history are unchanged.
+4. Move/reorder a math block visually and prove evaluation results and calculation order are unchanged.
+5. Explicitly change calculation order and prove the new sequence is applied.
+6. Undo/redo a variable assignment and verify assignment versions and revision digests.
+7. Resize a page and prove physical micrometre geometry is deterministic.
+8. Edit a table cell, convert table ↔ matrix/vector, save/reopen, and preserve IDs/provenance.
+9. Edit beam/frame geometry and prove the structured model—not a screenshot—is persisted.
+10. Recompute shear/moment diagrams and verify they are tied to the correct source revision.
+11. Reject stale evaluation results after an authored edit.
+12. Save/reopen in local-only mode with cloud services disabled.
+13. Simulate an unknown BlockSuite transaction and prove it cannot mutate calculation meaning.
+14. Run the adapter suite against every supported BlockSuite version and the mandatory Windows host build.
 
 ## 13. Implementation sequence
 
