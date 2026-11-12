@@ -223,6 +223,18 @@ Record each result as:
 
 Also inspect the full native package and Rust workspace manifests to determine whether native database, disk-sync, preview and other functionality can be linked directly into a Rust/Tauri host or must remain a separately packaged process.
 
+## 10A. Repository-tree and renderer API verification (2026-11-12)
+
+The live recursive Git tree for `canary` returned 12,828 paths with `truncated=false`. The Electron package tree contains the main/preload/helper/worker/window/security/storage/updater/import/preview/sync source areas and their focused tests. The scan confirms the following API boundary facts:
+
+- `packages/frontend/apps/electron-renderer/package.json` directly depends on `@affine/electron-api`.
+- `packages/frontend/electron-api/src/index.ts` exports four renderer globals: `__appInfo`, `__apis`, `__events`, and `__sharedStorage`; it also exports shared desktop state and tab/update/import types.
+- The API package type-imports main handlers/events, helper handlers/events, preload `AppInfo`, shared storage, import-source types, and window/tab metadata. This couples the public renderer API types to Electron package implementation modules and should be removed by the T2 framework-neutral contract.
+- The preload builds its callable API dynamically from handler/event metadata, merges main and helper namespaces, and adds a native-file import adapter using Electron `webUtils.getPathForFile`.
+- The helper exposes `db`, `nbstore`, `diskSync`, `workspace`, `dialog`, and `preview` handler namespaces; its events include `db`, `diskSync`, and `workspace`.
+
+**Verification limitation:** GitHub code search returned empty/incomplete results for the relevant Electron identifiers. A recursive tree proves path coverage, not symbol usage. Therefore this run does not claim an exhaustive list of every renderer consumer or Electron import. The local `rg` scan in section 10 remains required before T1 can be closed. The exact main-handler namespace map also remains to be captured from the local scan.
+
 ## 11. T1 deliverables and exit criteria
 
 T1 is complete only when:
