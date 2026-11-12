@@ -14,7 +14,7 @@ import {
   productName,
   REPO_ROOT,
   ROOT,
-} from './make-env.js';
+} from './make-env.mjs';
 
 const log = debug('affine:make-nsis');
 
