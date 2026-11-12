@@ -95,12 +95,29 @@ Other dependencies in the desktop package are not automatically removable: `asyn
 | Authentication/session storage | `src/main/auth/auth-session.ts` | Token broker, encrypted token persistence via Electron `safeStorage`, endpoint normalization and auth transport | Replace secure storage with a Windows-protected secret store (DPAPI-backed/keyring approach) and preserve atomic file mutation and endpoint isolation. Do not store secrets in renderer storage. |
 | Shared state/cache | `src/main/shared-storage/storage.ts`, `src/preload/shared-storage.ts` | Persistent JSON state/cache plus renderer memory mirror, revision tracking, broadcasts, synchronous bootstrap read | Replace with a single authoritative host-side store and explicit async commands/events. Define ordering, conflict, startup-read and crash-consistency semantics before implementation. |
 | App configuration | `src/main/config-storage/persist.ts`, `src/main/config.ts` | User-data path, JSON configuration, build channel and environment flags | Map data paths to Tauri app-data locations; retain compatible config schema and explicit channel policy. |
-| Updater | `src/main/updater/*`, `src/main/handlers/updater*` (verify exact handler path during local scan) | electron-updater, AFFiNE feed provider, Windows-specific updater, progress/events, install/restart | Replace with signed Tauri updater artifacts and an explicit update-channel design. Existing feed formats and channel behavior require compatibility review. |
+| Updater | `src/main/updater/*`, `src/main/handlers.ts`, `src/main/events.ts` | electron-updater, AFFiNE feed provider, Windows-specific updater, progress/events, install/restart | Replace with signed Tauri updater artifacts and an explicit update-channel design. Existing feed formats and channel behavior require compatibility review. |
 | Logging/telemetry | `src/main/logger.ts`, `src/main/recording/*`, Sentry setup in main entry | Electron logger, Sentry Electron SDK, application telemetry | Select host-neutral logging and Sentry Rust/JS integrations. Avoid duplicate events and preserve privacy controls. |
 | Recording/system capture | `src/main/recording/feature.ts`, `src/main/tray/index.ts` | OS capture permissions, native module integration, process/application monitoring, popup and tray coordination | Product-scope decision required. Do not migrate inherited meeting-recording functionality automatically. |
 | Packaging | `forge.config.mjs`, `scripts/common.ts`, `scripts/build-layers.ts`, `scripts/make-nsis.ts`, `scripts/make-squirrel.ts`, signing scripts | Electron layer bundling, Forge hooks, resource trimming, makers, NSIS/Squirrel and signing | Replace with Tauri CLI/bundler and Windows signing workflow after the shell proof of concept. No packaging repair is part of T1. |
 
-## 5. Required product-scope classification
+## 5. Existing Rust/native workspace reuse evidence
+
+The repository already has a Rust workspace at the root. Its members include `packages/frontend/native`, `packages/frontend/native/nbstore`, and `packages/frontend/native/sqlite_v1`, alongside other native packages. This is important: a Tauri host would not necessarily need to launch a Node.js helper merely to reach the existing Rust storage implementation.
+
+Source evidence:
+
+- `packages/frontend/native/Cargo.toml` defines `affine_native` as both `cdylib` and `rlib`; it depends on `affine_nbstore`, `affine_sqlite_v1`, disk-sync, preview, and media-capture components.
+- `packages/frontend/native/src/lib.rs` exposes disk-sync and preview modules and re-exports nbstore/sqlite APIs.
+- `packages/frontend/native/nbstore/Cargo.toml` defines `affine_nbstore` as `cdylib` and `rlib` and declares a `use-as-lib` feature. Its `src/lib.rs` conditionally disables N-API wrapper exports when that feature is enabled, providing evidence of a library-use path.
+- `packages/frontend/native/sqlite_v1/Cargo.toml` is also `cdylib` and `rlib`, but its current manifest does not declare an equivalent `use-as-lib` feature; direct Tauri use may need a small crate-boundary refactor.
+- The `affine_native` package currently includes N-API build dependencies and is designed to be loaded by Node. It should not be assumed to be a ready-made Tauri plugin or direct Tauri dependency.
+- The workspace dependency for `affine_preview` is version-based rather than a listed local workspace member; verify its actual source/feature availability before relying on direct linkage.
+
+**Assessment:** direct Rust reuse is plausible for parts of the native storage stack, but not yet proven. T1 still needs a Windows-targeted `cargo check` feasibility spike on a separate future task, review of N-API-specific types/macros, Tokio runtime ownership, SQLx migrations, feature flags, native capture dependencies, and crate licensing. The current Electron helper remains the only inspected integration path for these services.
+
+The repository paths checked for a prospective Tauri app (`packages/frontend/apps/tauri/package.json`, `packages/frontend/apps/tauri/tauri.conf.json`, and `packages/frontend/apps/tauri/src-tauri/Cargo.toml`) do not currently exist on `canary`. No Tauri application scaffold was found at those expected paths.
+
+## 6. Required product-scope classification
 
 The current package is explicitly named and described as AFFiNE Desktop (`@affine/electron`, description `AFFiNE Desktop App`). Its source includes inherited workspace, sync, authentication, recording, tabbed web-content, preview and database capabilities.
 
@@ -132,7 +149,7 @@ Initial disposition:
 | Auto-update | Retain capability; replace implementation | Required release-management capability, subject to channel/signing decisions. |
 | Sentry/logging | Adapt | Retain only approved telemetry and logging behavior. |
 
-## 6. Tauri target mapping and unresolved design decisions
+## 7. Tauri target mapping and unresolved design decisions
 
 | Concern | Candidate Tauri mechanism | Must be decided/tested |
 |---|---|---|
@@ -152,7 +169,7 @@ Initial disposition:
 | Web runtime | WebView2 | Evergreen bootstrapper versus offline runtime; runtime presence, install failure and version testing. |
 | Telemetry | Rust and frontend Sentry integrations or host-neutral telemetry | Release identity, crash coverage and privacy behavior. |
 
-## 7. Cross-cutting invariants
+## 8. Cross-cutting invariants
 
 The migration must preserve all of the following:
 
@@ -166,7 +183,7 @@ The migration must preserve all of the following:
 8. **No silent feature retirement:** inherited AFFiNE features require explicit retain/adapt/retire decisions.
 9. **No Electron work during T1:** do not repair Electron packaging, remove Electron dependencies, or change existing Electron runtime code as part of the inventory.
 
-## 8. Documentation and decision conflicts to reconcile before implementation
+## 9. Documentation and decision conflicts to reconcile before implementation
 
 The live `canary` documentation is not fully aligned with the user's later approved decisions and dependent PR work. This inventory records the conflicts; it does not rewrite those documents or reinterpret the decisions.
 
@@ -177,7 +194,7 @@ The live `canary` documentation is not fully aligned with the user's later appro
 | Layout | `canary` roadmap and `DOCUMENT-MODEL.md` still contain flexible/positioned placement wording | PR #18 defines fixed one-to-four-column page flow. Preserve that dependent approved contract; do not implement free positioning. |
 | Release targets | Electron Forge scripts include multiple operating systems and makers | Windows x64 is mandatory. Other platform targets must not constrain the first Tauri delivery; whether to retire them is a separate product decision. |
 
-## 9. Required local repository scan to close T1
+## 10. Required local repository scan to close T1
 
 Run these from a clean checkout after fetching current branches. These are inspection-only commands; do not apply automated replacements.
 
@@ -206,7 +223,7 @@ Record each result as:
 
 Also inspect the full native package and Rust workspace manifests to determine whether native database, disk-sync, preview and other functionality can be linked directly into a Rust/Tauri host or must remain a separately packaged process.
 
-## 10. T1 deliverables and exit criteria
+## 11. T1 deliverables and exit criteria
 
 T1 is complete only when:
 
@@ -216,14 +233,14 @@ T1 is complete only when:
 - [x] Windows x64 and product architecture invariants are explicit.
 - [x] Existing PR dependencies and the no-packaging-repair/no-dependency-removal boundary are explicit.
 - [ ] Full local monorepo Electron-import and renderer-global scan is recorded.
-- [ ] Native module/Rust workspace reuse feasibility is recorded.
+- [x] Initial Rust workspace and N-API reuse evidence is recorded; direct Tauri linkage feasibility remains unproven.
 - [ ] Every discovered Electron API consumer has a disposition.
 - [ ] Required inherited AFFiNE features have retain/adapt/retire decisions.
 - [ ] Architecture conflicts listed in section 8 are reconciled through explicit decisions and appropriate documentation/PR updates.
 
 T1 produces an evidence-backed migration inventory. It does not build Tauri, change dependencies, or claim Windows packaging readiness.
 
-## 11. Follow-on milestones (not authorized by T1)
+## 12. Follow-on milestones (not authorized by T1)
 
 - **T2 — Desktop host contract:** define the framework-neutral typed frontend API and process/service contracts.
 - **T3 — Tauri 2 Windows x64 shell:** minimal Tauri host running the existing frontend, with a repeatable development build and test installer.
