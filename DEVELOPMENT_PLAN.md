@@ -4,7 +4,7 @@ This roadmap describes intended product direction and sequencing. Planned items 
 
 ## Foundation
 
-Khwarizmi Studio is **based on [AFFiNE](https://github.com/toeverything/AFFiNE)**. AFFiNE provides the inherited application foundation; [BlockSuite](https://github.com/toeverything/BlockSuite) provides the editor foundation. Adapt both incrementally while preserving upstream licenses and notices.
+Khwarizmi Studio retains the useful **AFFiNE-derived React/TypeScript and BlockSuite frontend packages** as its editor/application foundation. **Tauri 2 is the selected desktop host**, replacing the inherited Electron desktop runtime. This does not commit the project to retaining every inherited AFFiNE desktop capability. Preserve upstream licenses and notices.
 
 ## Product outcome
 
@@ -29,7 +29,7 @@ Baseline evidence and remaining gates: [Repository baseline](./docs/BASELINE.md)
 - [x] Record accepted architecture direction and responsibility boundaries.
 - [x] Draft the versioned worksheet/document model and page geometry contract.
 - [x] Draft canonical AST, variable, dependency, substitution, unit, and error semantics.
-- [x] Specify the TypeScript-authoritative v1 core; defer the Python worker from v1.
+- [ ] Reconcile legacy TypeScript/CortexJS calculation wording with the approved CalcpadCE calculation-host boundary; defer the Python worker from v1.
 - [x] Specify the initial JSON-RPC 2.0 named-pipe topology and framing proposal.
 - [x] Resolve owner decisions A1–A9 and select the T1–T6 implementation contract.
 - [ ] Publish and freeze versioned JSON schemas.
@@ -43,7 +43,7 @@ Architecture documents: [Contract index](./docs/architecture/README.md).
 ## Phase 2 — Worksheet interaction foundation
 
 - [ ] Establish a page-oriented worksheet experience on BlockSuite.
-- [ ] Support flexible placement and multi-column composition.
+- [ ] Support fixed page-flow layout with one to four columns; do not introduce arbitrary/free positioning.
 - [ ] Define selection, editing, keyboard, and navigation behavior.
 - [ ] Add equation, text, table, and result content blocks.
 - [ ] Support side-by-side input/expression and result presentation.
@@ -86,11 +86,17 @@ Architecture documents: [Contract index](./docs/architecture/README.md).
 
 **Exit criteria:** stable authoring-to-review-to-PDF workflow, repeatable installation, and documented limitations.
 
-## Next development milestone — T1: Electron-to-Tauri 2 migration inventory
+## T1 — Electron-to-Tauri 2 migration inventory
 
-T1 is the next development milestone. The selected desktop target is **Tauri 2**, replacing Electron because avoiding Electron packaging and maintenance complexity is the primary motivation. T1 is an evidence-backed inventory and planning milestone only: it does not repair Electron packaging, remove Electron dependencies, rewrite runtime code, or start T2–T8 implementation. See [Desktop platform migration inventory](./docs/architecture/DESKTOP-PLATFORM-MIGRATION.md) for the source-backed responsibility map, dependency inventory, risks, product-scope dispositions, invariants, and exit criteria.
+T1 established the initial source-backed migration inventory. The selected desktop target is **Tauri 2**, replacing Electron because avoiding Electron packaging and maintenance complexity is the primary motivation. T1 does not repair Electron packaging, remove Electron dependencies, or rewrite the Electron runtime. See [Desktop platform migration inventory](./docs/architecture/DESKTOP-PLATFORM-MIGRATION.md).
 
-Windows x64 remains mandatory. The React/TypeScript frontend and BlockSuite foundation are retained; the approved CalcpadCE calculation-engine boundary and fixed one-to-four-column page-flow layout remain unchanged. T1 must reconcile documentation conflicts before implementation and must preserve existing PR dependencies.
+**T1 verification status: not yet closed.** The live recursive Git tree was inspected (12,828 paths), the Electron host/package surface and the renderer API package dependency were identified, and the native Rust workspace manifests were reviewed. The connector's code-search endpoint returned incomplete/empty results, so a complete symbol-level scan of all renderer consumers cannot be verified from this session. The exact consumer map, final inherited-feature dispositions, and Windows-targeted native-link feasibility remain T1 closure gates. Do not mark these checks complete based on path inventory alone.
+
+Windows x64 remains mandatory. Retain the AFFiNE-derived React/TypeScript and BlockSuite frontend packages, use Tauri 2 as the desktop host, preserve the approved CalcpadCE calculation-engine boundary, and preserve fixed one-to-four-column page-flow layout. Do not change existing PR dependencies or silently retire inherited features.
+
+## Next development milestone — T2: Framework-neutral desktop host contract
+
+T2 defines the typed, framework-neutral boundary between the renderer and desktop capabilities/services. The first draft is [Desktop host contract](./docs/architecture/DESKTOP-HOST-CONTRACT.md). It is a contract-design artifact only: no Tauri runtime, Electron rewrite, packaging change, dependency deletion, or calculation-engine implementation is included. T2 must reconcile the API consumer audit and product-scope decisions before freezing service methods.
 
 ### Earlier contract milestone reference — PR #3
 
