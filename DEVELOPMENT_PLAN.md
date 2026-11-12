@@ -86,9 +86,15 @@ Architecture documents: [Contract index](./docs/architecture/README.md).
 
 **Exit criteria:** stable authoring-to-review-to-PDF workflow, repeatable installation, and documented limitations.
 
-## Next development milestone — PR #3: contract freeze and executable conformance
+## Next development milestone — T1: Electron-to-Tauri 2 migration inventory
 
-PR #3 is the next product-development milestone, not a UI feature. It converts the architecture proposals into versioned, machine-checkable contracts and an executable conformance suite. Scope and acceptance criteria: [PR #3 milestone](./docs/architecture/PR-3-CONTRACT-CONFORMANCE.md).
+T1 is the next development milestone. The selected desktop target is **Tauri 2**, replacing Electron because avoiding Electron packaging and maintenance complexity is the primary motivation. T1 is an evidence-backed inventory and planning milestone only: it does not repair Electron packaging, remove Electron dependencies, rewrite runtime code, or start T2–T8 implementation. See [Desktop platform migration inventory](./docs/architecture/DESKTOP-PLATFORM-MIGRATION.md) for the source-backed responsibility map, dependency inventory, risks, product-scope dispositions, invariants, and exit criteria.
+
+Windows x64 remains mandatory. The React/TypeScript frontend and BlockSuite foundation are retained; the approved CalcpadCE calculation-engine boundary and fixed one-to-four-column page-flow layout remain unchanged. T1 must reconcile documentation conflicts before implementation and must preserve existing PR dependencies.
+
+### Earlier contract milestone reference — PR #3
+
+The earlier PR #3 contract-freeze milestone remains a relevant contract/conformance workstream, but is no longer the next desktop-development milestone. Its acceptance criteria and existing status are retained below for traceability; this T1 roadmap update does not claim that the PR #3 requirements are complete.
 
 1. Publish versioned document, expression, evaluation, diagnostic, and RPC JSON Schemas from the accepted ADRs.
 2. Add language-neutral fixtures with stable IDs and independently reviewed expected outcomes.
