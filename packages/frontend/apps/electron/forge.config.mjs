@@ -18,7 +18,7 @@ import {
   icoPath,
   platform,
   productName,
-} from './scripts/make-env.js';
+} from './scripts/make-env.mjs';
 
 const fromBuildIdentifier = utils.fromBuildIdentifier;
 

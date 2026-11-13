@@ -1,0 +1,93 @@
+name: Windows x64 Desktop Build
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches:
+      - canary
+    paths:
+      - '.github/workflows/windows-x64-build.yml'
+      - 'packages/frontend/apps/electron/**'
+      - 'packages/frontend/apps/**'
+      - 'packages/**'
+      - 'blocksuite/**'
+      - 'tools/**'
+      - 'yarn.lock'
+      - 'package.json'
+      - '.yarnrc.yml'
+  push:
+    branches:
+      - canary
+    paths:
+      - '.github/workflows/windows-x64-build.yml'
+      - 'packages/frontend/apps/electron/**'
+      - 'packages/frontend/apps/**'
+      - 'packages/**'
+      - 'blocksuite/**'
+      - 'tools/**'
+      - 'yarn.lock'
+      - 'package.json'
+      - '.yarnrc.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: windows-x64-build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-windows-x64:
+    name: Package Windows x64 desktop app
+    runs-on: windows-latest
+    timeout-minutes: 90
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      # Match the repository's release packaging topology. Electron Forge's
+      # prePackage hook expects workspace-local node_modules; the default
+      # monorepo hoisting layout can leave its resources/app/node_modules
+      # staging path missing on Windows.
+      - name: Setup Node.js and workspace dependencies
+        uses: ./.github/actions/setup-node
+        with:
+          extra-flags: workspaces focus @affine/electron @affine/monorepo @affine/nbstore @toeverything/infra
+          hard-link-nm: false
+          nmHoistingLimits: workspaces
+          enableScripts: true
+
+      - name: Build AFFiNE native (Windows x64)
+        uses: ./.github/actions/build-rust
+        with:
+          target: x86_64-pc-windows-msvc
+          package: '@affine/native'
+
+      - name: Build Electron application layers
+        run: yarn workspace @affine/electron build
+        env:
+          BUILD_TYPE: canary
+
+      - name: Create Windows x64 packages
+        run: yarn workspace @affine/electron make --arch=x64 --platform=win32
+        env:
+          BUILD_TYPE: canary
+          HOIST_NODE_MODULES: '1'
+
+      - name: Create NSIS installer
+        run: yarn workspace @affine/electron make-nsis --arch=x64 --platform=win32
+        env:
+          BUILD_TYPE: canary
+
+      - name: Upload Windows installers and portable ZIP
+        uses: actions/upload-artifact@v4
+        with:
+          name: khwarizmi-studio-windows-x64
+          path: packages/frontend/apps/electron/out/canary/make/
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 30
